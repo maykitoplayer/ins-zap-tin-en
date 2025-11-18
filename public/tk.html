@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You for Your Purchase!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #8A2BE2;
+            --secondary-color: #9370DB;
+            --dark-text: #2c2c2c;
+            --light-text: #555;
+            --background-color: #fdfaff;
+            --white-color: #ffffff;
+            --border-color: #ebebeb;
+            --success-color: #28a745;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .main-content {
+            background-color: var(--white-color);
+            border-radius: 16px;
+            padding: 60px 40px; /* Increased padding to better center the content */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--success-color); /* Changed icon color to success green */
+        }
+        h1 {
+            font-weight: 900;
+            font-size: 2.5rem;
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            margin-bottom: 40px; /* Increased margin to give more space for the button */
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .redirect_btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 20px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .redirect_btn:hover {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="icon">✔</div>
+            <h1>Thank You for Your Purchase!</h1>
+            <p>Your order has been processed successfully. You can access your user dashboard by clicking the button below.</p>
+            
+            <a href="https://trustsignals.online/user/dashboard.php" class="redirect_btn">GO TO DASHBOARD</a>
+        </div>
+    </div>
+</body>
+</html>

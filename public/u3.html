@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exclusive Offer - CheatFinder V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #8A2BE2;
+            --secondary-color: #9370DB;
+            --dark-text: #2c2c2c;
+            --light-text: #555;
+            --background-color: #fdfaff;
+            --white-color: #ffffff;
+            --border-color: #ebebeb;
+            --success-color: #28a745;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .main-content {
+            background-color: var(--white-color);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-weight: 900;
+            font-size: 2.5rem;
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            margin-bottom: 25px;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .form-section {
+            margin-top: 30px;
+        }
+        h2 {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--dark-text);
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--dark-text);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Montserrat', sans-serif;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        /* Style for Hotmart container to have some top margin */
+        #hotmart-sales-funnel {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="icon">🎉</div>
+            <h1>Your purchase is almost finalized.</h1>
+            <p><strong>Congratulations!</strong> As a user of CheatFinder App, we are pleased to present our latest extension, <strong>CheatFinder V2!</strong></p>
+            <p>This new version offers advanced features to further expand your spying capabilities. In addition to monitoring WhatsApp, you can now access your partner's social networks such as Facebook, and Instagram directly from CheatFinder V2.</p>
+            <p>This exclusive offer is reserved for our loyal customers and is limited. To take full advantage of these new features, we suggest you upgrade to version V2 now!</p>
+            
+            <div class="form-section">
+                <h2>ENTER YOUR PARTNER'S SOCIAL MEDIA FOR MONITORING</h2>
+                <div class="input-group">
+                    <label for="facebook-user">Facebook username (optional)</label>
+                    <input type="text" id="facebook-user" name="facebook-user" placeholder="e.g., john.doe.123">
+                </div>
+                <div class="input-group">
+                    <label for="instagram-user">Instagram username (optional)</label>
+                    <input type="text" id="instagram-user" name="instagram-user" placeholder="e.g., @johndoe">
+                </div>
+                
+                <!-- HOTMART - Sales Funnel Widget -->
+                <!--- sales funnel container --->
+                <div id="hotmart-sales-funnel"></div>
+            </div>
+        </div>
+    </div>
+
+    <!--- script load and setup --->
+    <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
+    <script>
+    checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel')
+    </script>
+    <!-- HOTMART - Sales Funnel Widget -->
+</body>
+</html>
