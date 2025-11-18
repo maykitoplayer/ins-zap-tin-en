@@ -654,7 +654,7 @@ export default function U1() {
                         <LockOpen className="text-white" size={32} />
                       </div>
                       <h2 className="text-xl font-bold text-gray-800"><span className="text-yellow-600">🔓</span> UNLOCK COMPLETE REPORT</h2>
-                      <p className="text-gray-600 mt-1">Get instant access to the full report with uncensored photos and complete conversation history.</p>
+                      <p className="text-gray-600 mt-1">Get instant access to the full report with all conversations, including archived or deleted ones</p>
 
                       <div className="bg-red-100 border-2 border-red-500 text-red-800 p-4 rounded-lg mt-5">
                         <div className="flex items-center justify-center gap-2"><AlertTriangle className="text-red-600" /><h3 className="font-bold">THE REPORT WILL BE DELETED IN:</h3></div>
