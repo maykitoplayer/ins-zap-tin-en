@@ -3,30 +3,55 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import Script from "next/script"
 import useEmblaCarousel from "embla-carousel-react"
 import Autoplay from "embla-carousel-autoplay"
-// 1. Adicionado o ícone 'Loader2' para a tela de carregamento
 import { Zap, AlertTriangle, Flame, Lock, Camera, ChevronLeft, ChevronRight, CheckCircle, Users, MapPin, X, Loader2, Search } from "lucide-react"
 
-// --- DEFINIÇÃO DE TIPO E COMPONENTES AUXILIARES (sem alteração) ---
+// --- DEFINIÇÃO DE TIPO E DADOS DOS MATCHES ---
 interface Match { name: string; age: number; lastSeen: string; avatar: string; verified: boolean; identity: string; location: string; distance: string; bio: string; zodiac: string; mbti: string; passion: string; interests: string[]; }
+
+// Dados padrão para "Non-binary" ou caso inicial
+const defaultMatchesData: Omit<Match, 'location'>[] = [
+    { name: "Mila", age: 26, lastSeen: "6h ago", avatar: "/images/male/tinder/5.jpg", verified: true, identity: "Bisexual", distance: "2 km", bio: "Part dreamer, part doer, all about good vibes. Ready to make some memories?", zodiac: "Virgo", mbti: "KU", passion: "Coffee", interests: ["Hiking", "Green Living", "Live Music", "Pottery"] },
+    { name: "John", age: 25, lastSeen: "4h ago", avatar: "/images/female/tinder/5.jpg", verified: true, identity: "Bisexual", distance: "2 km", bio: "Half adrenaline junkie, half cozy blanket enthusiast. What’s your vibe?", zodiac: "Leo", mbti: "BU", passion: "Fitness", interests: ["Meditation", "Books", "Wine", "Music"] },
+    { name: "Harper", age: 21, lastSeen: "3h ago", avatar: "/images/male/tinder/3.jpg", verified: false, identity: "Woman", distance: "5 km", bio: "Just a girl who loves sunsets and long walks on the beach. Looking for someone to share adventures with.", zodiac: "Leo", mbti: "UVA", passion: "Yoga", interests: ["Travel", "Photography", "Podcasts"] },
+    { name: "Will", age: 23, lastSeen: "2h ago", avatar: "/images/female/tinder/3.jpg", verified: true, identity: "Man", distance: "8 km", bio: "Fluent in sarcasm and movie quotes. Let's find the best pizza place in town.", zodiac: "Gemini", mbti: "OHY", passion: "Baking", interests: ["Concerts", "Netflix", "Dogs"] },
+];
+
+// Dados de matches femininos (mostrados quando o usuário seleciona "Male")
+const femaleMatchesData: Omit<Match, 'location'>[] = [
+    { name: "Elizabeth", age: 24, lastSeen: "1h ago", avatar: "/images/male/tinder/1.jpg", verified: true, identity: "Woman", distance: "3 km", bio: "Seeking new adventures and a great cup of coffee. Let's explore the city together.", zodiac: "Aries", mbti: "ENFP", passion: "Traveling", interests: ["Art", "History", "Podcasts"] },
+    { name: "Victoria", age: 27, lastSeen: "5h ago", avatar: "/images/male/tinder/2.jpg", verified: false, identity: "Woman", distance: "1 km", bio: "Bookworm and aspiring chef. Tell me about the last great book you read.", zodiac: "Taurus", mbti: "ISFJ", passion: "Cooking", interests: ["Reading", "Yoga", "Documentaries"] },
+    { name: "Charlotte", age: 22, lastSeen: "Online", avatar: "/images/male/tinder/3.jpg", verified: true, identity: "Woman", distance: "6 km", bio: "Lover of live music and spontaneous road trips. What's our first destination?", zodiac: "Sagittarius", mbti: "ESFP", passion: "Music", interests: ["Concerts", "Photography", "Hiking"] },
+    { name: "Emily", age: 25, lastSeen: "3h ago", avatar: "/images/male/tinder/4.jpg", verified: true, identity: "Woman", distance: "4 km", bio: "Fitness enthusiast who's equally happy on the couch with a good movie.", zodiac: "Virgo", mbti: "ISTJ", passion: "Fitness", interests: ["Movies", "Healthy Eating", "Dogs"] },
+    { name: "Grace", age: 28, lastSeen: "8h ago", avatar: "/images/male/tinder/5.jpg", verified: false, identity: "Woman", distance: "7 km", bio: "Creative soul with a love for painting and poetry. Looking for meaningful conversations.", zodiac: "Pisces", mbti: "INFP", passion: "Art", interests: ["Museums", "Writing", "Coffee Shops"] },
+    { name: "Olivia", age: 23, lastSeen: "2h ago", avatar: "/images/male/tinder/6.jpg", verified: true, identity: "Woman", distance: "2 km", bio: "Sarcasm is my second language. Let's find the best taco spot in town.", zodiac: "Gemini", mbti: "ENTP", passion: "Comedy", interests: ["Foodie", "Travel", "Stand-up"] },
+];
+
+// Dados de matches masculinos (mostrados quando o usuário seleciona "Female")
+const maleMatchesData: Omit<Match, 'location'>[] = [
+    { name: "William", age: 26, lastSeen: "Online", avatar: "/images/female/tinder/1.jpg", verified: true, identity: "Man", distance: "2 km", bio: "Engineer by day, musician by night. Let's talk about tech and tunes.", zodiac: "Capricorn", mbti: "INTJ", passion: "Guitar", interests: ["Technology", "Live Music", "Brewing"] },
+    { name: "James", age: 29, lastSeen: "4h ago", avatar: "/images/female/tinder/2.jpg", verified: true, identity: "Man", distance: "5 km", bio: "Outdoors enthusiast looking for someone to hike with. My dog will probably like you.", zodiac: "Leo", mbti: "ESTP", passion: "Hiking", interests: ["Camping", "Dogs", "Bonfires"] },
+    { name: "Henry", age: 25, lastSeen: "1h ago", avatar: "/images/female/tinder/3.jpg", verified: false, identity: "Man", distance: "3 km", bio: "Film buff and history nerd. Can recommend a movie for any mood.", zodiac: "Cancer", mbti: "INFJ", passion: "Movies", interests: ["History", "Reading", "Chess"] },
+    { name: "Oliver", age: 27, lastSeen: "6h ago", avatar: "/images/female/tinder/4.jpg", verified: true, identity: "Man", distance: "8 km", bio: "Just a guy who enjoys good food, good company, and exploring new places.", zodiac: "Libra", mbti: "ESFJ", passion: "Foodie", interests: ["Travel", "Cooking", "Sports"] },
+    { name: "Thomas", age: 30, lastSeen: "2h ago", avatar: "/images/female/tinder/5.jpg", verified: true, identity: "Man", distance: "4 km", bio: "Trying to find someone who won't steal my fries. Kidding... mostly.", zodiac: "Scorpio", mbti: "ISTP", passion: "Traveling", interests: ["Photography", "Motorcycles", "Gym"] },
+    { name: "Edward", age: 24, lastSeen: "7h ago", avatar: "/images/female/tinder/6.jpg", verified: false, identity: "Man", distance: "6 km", bio: "Fluent in sarcasm and bad jokes. Looking for a partner in crime.", zodiac: "Aquarius", mbti: "ENTP", passion: "Gaming", interests: ["Comedy", "Sci-Fi", "Concerts"] },
+];
+
+// --- COMPONENTES AUXILIARES ---
 const PrevButton = (props: any) => { const { enabled, onClick } = props; return ( <button className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full disabled:opacity-30 transition-opacity z-10" onClick={onClick} disabled={!enabled}> <ChevronLeft size={20} /> </button> ) }
 const NextButton = (props: any) => { const { enabled, onClick } = props; return ( <button className="absolute top-1/2 right-2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full disabled:opacity-30 transition-opacity z-10" onClick={onClick} disabled={!enabled}> <ChevronRight size={20} /> </button> ) }
 function MatchDetailModal({ match, onClose }: { match: Match; onClose: () => void }) { useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = 'unset'; }; }, []); return ( <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}> <div className="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}> <button onClick={onClose} className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 z-10"> <X size={20} /> </button> <img src={match.avatar} alt={match.name} className="w-full h-80 object-cover rounded-t-2xl" /> <div className="p-5"> <div className="flex items-center gap-2"> <h1 className="text-3xl font-bold text-gray-800">{match.name}</h1> {match.verified && <CheckCircle className="text-blue-500" fill="white" size={28} />} </div> <div className="flex flex-col gap-1 text-gray-600 mt-2 text-sm"> <div className="flex items-center gap-1.5"><Users size={16} /><p>{match.identity}</p></div> <div className="flex items-center gap-1.5"><MapPin size={16} /><p>{match.location}</p></div> <div className="flex items-center gap-1.5"><p>📍 {match.distance} away</p></div> </div> <div className="mt-6"> <h2 className="font-bold text-gray-800">About Me</h2> <p className="text-gray-600 mt-1">{match.bio}</p> </div> <div className="flex flex-wrap gap-2 mt-4 text-sm"> <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">{match.zodiac}</span> <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">{match.mbti}</span> <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">{match.passion}</span> </div> <div className="mt-6"> <h2 className="font-bold text-gray-800">My Interests</h2> <div className="flex flex-wrap gap-2 mt-2 text-sm"> {match.interests.map(interest => ( <span key={interest} className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full">{interest}</span> ))} </div> </div> </div> <div className="sticky bottom-0 grid grid-cols-2 gap-4 bg-white p-4 border-t border-gray-200"> <button className="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition-colors">Pass</button> <button className="bg-gradient-to-r from-pink-500 to-red-500 text-white font-bold py-3 rounded-full hover:opacity-90 transition-opacity">Like</button> </div> </div> </div> ) }
 
-
 // --- COMPONENTE PRINCIPAL DA PÁGINA ---
 export default function Upsell2Page() {
-  // 2. NOVOS ESTADOS PARA CONTROLAR O FLUXO DA PÁGINA
   const [pageState, setPageState] = useState<'input' | 'loading' | 'results'>('input');
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Lógicas do Carrossel e do Timer (sem alteração)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 6000, stopOnInteraction: true })]); const [prevBtnEnabled, setPrevBtnEnabled] = useState(false); const [nextBtnEnabled, setNextBtnEnabled] = useState(false); const [selectedIndex, setSelectedIndex] = useState(0); const [scrollSnaps, setScrollSnaps] = useState<number[]>([]); const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]); const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]); const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]); const onSelect = useCallback(() => { if (!emblaApi) return; setSelectedIndex(emblaApi.selectedScrollSnap()); setPrevBtnEnabled(emblaApi.canScrollPrev()); setNextBtnEnabled(emblaApi.canScrollNext()); }, [emblaApi, setSelectedIndex]); useEffect(() => { if (!emblaApi) return; onSelect(); setScrollSnaps(emblaApi.scrollSnapList()); emblaApi.on("select", onSelect); emblaApi.on("reInit", onSelect); }, [emblaApi, setScrollSnaps, onSelect]); const [timeLeft, setTimeLeft] = useState(5 * 60); useEffect(() => { if (timeLeft === 0) return; const timer = setInterval(() => { setTimeLeft((prevTime) => (prevTime > 0 ? prevTime - 1 : 0)); }, 1000); return () => clearInterval(timer); }, [timeLeft]); const formatTime = (seconds: number) => { const minutes = Math.floor(seconds / 60); const remainingSeconds = seconds % 60; return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`; }
 
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [userLocation, setUserLocation] = useState<string>("sua cidade");
+  const [userLocation, setUserLocation] = useState<string>("your city");
 
-  // A busca da localização só vai acontecer quando a página de resultados for exibida
   useEffect(() => {
     if (pageState === 'results') {
       const fetchLocation = async () => {
@@ -39,14 +64,25 @@ export default function Upsell2Page() {
       };
       fetchLocation();
     }
-  }, [pageState]); // Depende do 'pageState'
+  }, [pageState]);
 
-  const fakeMatches: Match[] = useMemo(() => [
-    { name: "Mila", age: 26, lastSeen: "6h ago", avatar: "/images/tinder/mila.jpg", verified: true, identity: "Bisexual", location: `Lives in ${userLocation}`, distance: "2 km", bio: "Part dreamer, part doer, all about good vibes. Ready to make some memories?", zodiac: "Virgo", mbti: "KU", passion: "Coffee", interests: ["Hiking", "Green Living", "Live Music", "Pottery"] },
-    { name: "John", age: 25, lastSeen: "4h ago", avatar: "/images/tinder/john.jpg", verified: true, identity: "Bisexual", location: `Lives in ${userLocation}`, distance: "2 km", bio: "Half adrenaline junkie, half cozy blanket enthusiast. What’s your vibe?", zodiac: "Leo", mbti: "BU", passion: "Fitness", interests: ["Meditation", "Books", "Wine", "Music"] },
-    { name: "Harper", age: 21, lastSeen: "3h ago", avatar: "/images/tinder/harper.jpg", verified: false, identity: "Woman", location: `Lives in ${userLocation}`, distance: "5 km", bio: "Just a girl who loves sunsets and long walks on the beach. Looking for someone to share adventures with.", zodiac: "Leo", mbti: "UVA", passion: "Yoga", interests: ["Travel", "Photography", "Podcasts"] },
-    { name: "Will", age: 23, lastSeen: "2h ago", avatar: "/images/tinder/emma.jpg", verified: true, identity: "Man", location: `Lives in ${userLocation}`, distance: "8 km", bio: "Fluent in sarcasm and movie quotes. Let's find the best pizza place in town.", zodiac: "Gemini", mbti: "OHY", passion: "Baking", interests: ["Concerts", "Netflix", "Dogs"] },
-  ], [userLocation]);
+  const fakeMatches: Match[] = useMemo(() => {
+    let baseMatches: Omit<Match, 'location'>[];
+
+    if (selectedGender === 'Male') {
+      baseMatches = femaleMatchesData;
+    } else if (selectedGender === 'Female') {
+      baseMatches = maleMatchesData;
+    } else {
+      baseMatches = defaultMatchesData;
+    }
+
+    return baseMatches.map(match => ({
+      ...match,
+      location: `Lives in ${userLocation}`,
+    }));
+    
+  }, [userLocation, selectedGender]);
   
   const censoredPhotos = ["/images/censored/photo1.jpg", "/images/censored/photo2.jpg", "/images/censored/photo3.jpg", "/images/censored/photo4.jpg"];
 
@@ -57,7 +93,6 @@ export default function Upsell2Page() {
     }
   }, [pageState]);
 
-  // 3. FUNÇÕES PARA LIDAR COM AS NOVAS INTERAÇÕES
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -67,25 +102,19 @@ export default function Upsell2Page() {
 
   const handleStartInvestigation = () => {
     setPageState('loading');
-    // Simula uma busca que leva 3 segundos
     setTimeout(() => {
       setPageState('results');
     }, 3000);
   };
 
   const genderEmojis: { [key: string]: string } = {
-  'Male': '👨🏻',
-  'Female': '👩🏻',
-  'Non-binary': '🧑🏻'
-};
+    'Male': '👨🏻',
+    'Female': '👩🏻',
+    'Non-binary': '🧑🏻'
+  };
   
-  // 4. ESTRUTURA DE RENDERIZAÇÃO CONDICIONAL
   return (
     <>
-
-{/* ====================================================== */}
-      {/*                FAIXA DE ATENÇÃO ADICIONADA             */}
-      {/* ====================================================== */}
       <div className="fixed top-0 w-full z-50 bg-red-600 text-white p-2 text-center text-sm font-semibold">
         <span className="font-bold text-yellow-400">Attention:</span> do not close this page, Your payment is still being processed.
       </div>
@@ -96,16 +125,12 @@ export default function Upsell2Page() {
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 pt-12">
         <main className="w-full max-w-md mx-auto">
           
-          {/* ETAPA 1: INPUT DE FOTO E GÊNERO */}
           {pageState === 'input' && (
             <div className="space-y-6 animate-fade-in">
-            {/* ====================================================== */}
-    {/*                SEU TEXTO ADICIONADO AQUI               */}
-    {/* ====================================================== */}
-    <p className="text-lg text-center text-gray-800 pt-5">
-      <span className="font-bold text-red-600">ATTENTION!</span> Our system has identified that this user is registered on dating apps. Use our image scanner to verify.
-    </p>
-              {/* Card de Upload de Foto */}
+              <p className="text-lg text-center text-gray-800 pt-5">
+                <span className="font-bold text-red-600">ATTENTION!</span> Our system has identified that this user is registered on dating apps. Use our image scanner to verify.
+              </p>
+              
               <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Upload Their Photo for Facial Recognition</h2>
                 <label htmlFor="photo-upload" className="w-40 h-40 mx-auto flex items-center justify-center border-2 border-dashed border-blue-400 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
@@ -119,40 +144,34 @@ export default function Upsell2Page() {
                 <p className="text-sm text-gray-500 mt-4">We'll scan across all dating platforms to find matching profiles - even ones they think are hidden.</p>
               </div>
               
-              {/* Card de Seleção de Gênero */}
-<div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-  <h2 className="text-xl font-bold text-gray-800 mb-4">What gender are they?</h2>
-  <div className="grid grid-cols-3 gap-4">
-    {['Male', 'Female', 'Non-binary'].map((gender) => (
-      <button key={gender} onClick={() => setSelectedGender(gender)} className={`p-4 border rounded-xl transition-all duration-200 ${selectedGender === gender ? 'border-blue-500 bg-blue-100 ring-2 ring-blue-300' : 'border-gray-200 hover:border-gray-400'}`}>
-        
-        {/* A tag <img> foi substituída por este <span> */}
-        <span className="text-4xl mb-2 block" role="img" aria-label={gender}>
-          {genderEmojis[gender]}
-        </span>
+              <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">What gender are they?</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {['Male', 'Female', 'Non-binary'].map((gender) => (
+                    <button key={gender} onClick={() => setSelectedGender(gender)} className={`p-4 border rounded-xl transition-all duration-200 ${selectedGender === gender ? 'border-blue-500 bg-blue-100 ring-2 ring-blue-300' : 'border-gray-200 hover:border-gray-400'}`}>
+                      <span className="text-4xl mb-2 block" role="img" aria-label={gender}>
+                        {genderEmojis[gender]}
+                      </span>
+                      <span className="font-semibold text-gray-700">{gender}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  This helps us track their device activity and cross-reference with dating app usage patterns.
+                </p>
+              </div>
 
-        <span className="font-semibold text-gray-700">{gender}</span>
-      </button>
-    ))}
-  </div>
-  <p className="text-sm text-gray-500 mt-4">
-    This helps us track their device activity and cross-reference with dating app usage patterns.
-  </p>
-</div>
-
-              {/* Botão para Iniciar */}
-<button 
-  onClick={handleStartInvestigation} 
-  disabled={!imagePreview || !selectedGender}
-  className="w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700"
->
-  <Search size={20}/>
-  <span>START INVESTIGATION - FIND THE TRUTH</span>
-</button>
+              <button 
+                onClick={handleStartInvestigation} 
+                disabled={!imagePreview || !selectedGender}
+                className="w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700"
+              >
+                <Search size={20}/>
+                <span>START INVESTIGATION - FIND THE TRUTH</span>
+              </button>
             </div>
           )}
 
-          {/* ETAPA 2: TELA DE CARREGAMENTO */}
           {pageState === 'loading' && (
             <div className="text-center animate-fade-in space-y-4 py-10">
               <Loader2 className="w-16 h-16 text-blue-600 mx-auto animate-spin" />
@@ -161,7 +180,6 @@ export default function Upsell2Page() {
             </div>
           )}
 
-          {/* ETAPA 3: PÁGINA DE RESULTADOS (SEU CONTEÚDO ORIGINAL) */}
           {pageState === 'results' && (
             <div className="space-y-4 animate-fade-in">
               <div className="bg-red-600 text-white p-3 rounded-lg shadow-lg flex items-center gap-3"><Zap size={24} /><div><h1 className="font-bold text-base">PROFILE FOUND - THEY ARE ACTIVE ON TINDER</h1><p className="text-xs text-red-200">Last seen: <span className="font-semibold">Online now</span></p></div></div>
