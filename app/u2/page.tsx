@@ -8,15 +8,12 @@ import { Zap, AlertTriangle, Flame, Lock, Camera, ChevronLeft, ChevronRight, Che
 // --- DEFINIÇÃO DE TIPO E DADOS DOS MATCHES ---
 interface Match { name: string; age: number; lastSeen: string; avatar: string; verified: boolean; identity: string; location: string; distance: string; bio: string; zodiac: string; mbti: string; passion: string; interests: string[]; }
 
-// Dados padrão para "Non-binary" ou caso inicial
 const defaultMatchesData: Omit<Match, 'location'>[] = [
     { name: "Mila", age: 26, lastSeen: "6h ago", avatar: "/images/male/tinder/5.jpg", verified: true, identity: "Bisexual", distance: "2 km", bio: "Part dreamer, part doer, all about good vibes. Ready to make some memories?", zodiac: "Virgo", mbti: "KU", passion: "Coffee", interests: ["Hiking", "Green Living", "Live Music", "Pottery"] },
     { name: "John", age: 25, lastSeen: "4h ago", avatar: "/images/female/tinder/5.jpg", verified: true, identity: "Bisexual", distance: "2 km", bio: "Half adrenaline junkie, half cozy blanket enthusiast. What’s your vibe?", zodiac: "Leo", mbti: "BU", passion: "Fitness", interests: ["Meditation", "Books", "Wine", "Music"] },
     { name: "Harper", age: 21, lastSeen: "3h ago", avatar: "/images/male/tinder/3.jpg", verified: false, identity: "Woman", distance: "5 km", bio: "Just a girl who loves sunsets and long walks on the beach. Looking for someone to share adventures with.", zodiac: "Leo", mbti: "UVA", passion: "Yoga", interests: ["Travel", "Photography", "Podcasts"] },
     { name: "Will", age: 23, lastSeen: "2h ago", avatar: "/images/female/tinder/3.jpg", verified: true, identity: "Man", distance: "8 km", bio: "Fluent in sarcasm and movie quotes. Let's find the best pizza place in town.", zodiac: "Gemini", mbti: "OHY", passion: "Baking", interests: ["Concerts", "Netflix", "Dogs"] },
 ];
-
-// Dados de matches femininos (mostrados quando o usuário seleciona "Male")
 const femaleMatchesData: Omit<Match, 'location'>[] = [
     { name: "Elizabeth", age: 24, lastSeen: "1h ago", avatar: "/images/male/tinder/1.jpg", verified: true, identity: "Woman", distance: "3 km", bio: "Seeking new adventures and a great cup of coffee. Let's explore the city together.", zodiac: "Aries", mbti: "ENFP", passion: "Traveling", interests: ["Art", "History", "Podcasts"] },
     { name: "Victoria", age: 27, lastSeen: "5h ago", avatar: "/images/male/tinder/2.jpg", verified: false, identity: "Woman", distance: "1 km", bio: "Bookworm and aspiring chef. Tell me about the last great book you read.", zodiac: "Taurus", mbti: "ISFJ", passion: "Cooking", interests: ["Reading", "Yoga", "Documentaries"] },
@@ -25,8 +22,6 @@ const femaleMatchesData: Omit<Match, 'location'>[] = [
     { name: "Grace", age: 28, lastSeen: "8h ago", avatar: "/images/male/tinder/5.jpg", verified: false, identity: "Woman", distance: "7 km", bio: "Creative soul with a love for painting and poetry. Looking for meaningful conversations.", zodiac: "Pisces", mbti: "INFP", passion: "Art", interests: ["Museums", "Writing", "Coffee Shops"] },
     { name: "Olivia", age: 23, lastSeen: "2h ago", avatar: "/images/male/tinder/6.jpg", verified: true, identity: "Woman", distance: "2 km", bio: "Sarcasm is my second language. Let's find the best taco spot in town.", zodiac: "Gemini", mbti: "ENTP", passion: "Comedy", interests: ["Foodie", "Travel", "Stand-up"] },
 ];
-
-// Dados de matches masculinos (mostrados quando o usuário seleciona "Female")
 const maleMatchesData: Omit<Match, 'location'>[] = [
     { name: "William", age: 26, lastSeen: "Online", avatar: "/images/female/tinder/1.jpg", verified: true, identity: "Man", distance: "2 km", bio: "Engineer by day, musician by night. Let's talk about tech and tunes.", zodiac: "Capricorn", mbti: "INTJ", passion: "Guitar", interests: ["Technology", "Live Music", "Brewing"] },
     { name: "James", age: 29, lastSeen: "4h ago", avatar: "/images/female/tinder/2.jpg", verified: true, identity: "Man", distance: "5 km", bio: "Outdoors enthusiast looking for someone to hike with. My dog will probably like you.", zodiac: "Leo", mbti: "ESTP", passion: "Hiking", interests: ["Camping", "Dogs", "Bonfires"] },
@@ -35,6 +30,9 @@ const maleMatchesData: Omit<Match, 'location'>[] = [
     { name: "Thomas", age: 30, lastSeen: "2h ago", avatar: "/images/female/tinder/5.jpg", verified: true, identity: "Man", distance: "4 km", bio: "Trying to find someone who won't steal my fries. Kidding... mostly.", zodiac: "Scorpio", mbti: "ISTP", passion: "Traveling", interests: ["Photography", "Motorcycles", "Gym"] },
     { name: "Edward", age: 24, lastSeen: "7h ago", avatar: "/images/female/tinder/6.jpg", verified: false, identity: "Man", distance: "6 km", bio: "Fluent in sarcasm and bad jokes. Looking for a partner in crime.", zodiac: "Aquarius", mbti: "ENTP", passion: "Gaming", interests: ["Comedy", "Sci-Fi", "Concerts"] },
 ];
+const defaultCensoredPhotos = ["/images/censored/photo1.jpg", "/images/censored/photo2.jpg", "/images/censored/photo3.jpg", "/images/censored/photo4.jpg"];
+const femaleCensoredPhotos = ["/images/male/tinder/censored/censored-f-1.jpg", "/images/male/tinder/censored/censored-f-2.jpg", "/images/male/tinder/censored/censored-f-3.jpg", "/images/male/tinder/censored/censored-f-4.jpg"];
+const maleCensoredPhotos = ["/images/female/tinder/censored/censored-h-1.jpg", "/images/female/tinder/censored/censored-h-2.jpg", "/images/female/tinder/censored/censored-h-3.jpg", "/images/female/tinder/censored/censored-h-4.jpg"];
 
 // --- COMPONENTES AUXILIARES ---
 const PrevButton = (props: any) => { const { enabled, onClick } = props; return ( <button className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full disabled:opacity-30 transition-opacity z-10" onClick={onClick} disabled={!enabled}> <ChevronLeft size={20} /> </button> ) }
@@ -68,23 +66,17 @@ export default function Upsell2Page() {
 
   const fakeMatches: Match[] = useMemo(() => {
     let baseMatches: Omit<Match, 'location'>[];
-
-    if (selectedGender === 'Male') {
-      baseMatches = femaleMatchesData;
-    } else if (selectedGender === 'Female') {
-      baseMatches = maleMatchesData;
-    } else {
-      baseMatches = defaultMatchesData;
-    }
-
-    return baseMatches.map(match => ({
-      ...match,
-      location: `Lives in ${userLocation}`,
-    }));
-    
+    if (selectedGender === 'Male') { baseMatches = femaleMatchesData; } 
+    else if (selectedGender === 'Female') { baseMatches = maleMatchesData; } 
+    else { baseMatches = defaultMatchesData; }
+    return baseMatches.map(match => ({ ...match, location: `Lives in ${userLocation}` }));
   }, [userLocation, selectedGender]);
   
-  const censoredPhotos = ["/images/censored/photo1.jpg", "/images/censored/photo2.jpg", "/images/censored/photo3.jpg", "/images/censored/photo4.jpg"];
+  const censoredPhotos = useMemo(() => {
+    if (selectedGender === 'Male') { return femaleCensoredPhotos; }
+    if (selectedGender === 'Female') { return maleCensoredPhotos; }
+    return defaultCensoredPhotos;
+  }, [selectedGender]);
 
   useEffect(() => {
     if (pageState === 'results' && typeof (window as any).checkoutElements !== "undefined") {
@@ -95,16 +87,13 @@ export default function Upsell2Page() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImagePreview(URL.createObjectURL(file));
+      setImagePreview(URL.createObjectURL(e.target.files[0]));
     }
   };
 
   const handleStartInvestigation = () => {
     setPageState('loading');
-    setTimeout(() => {
-      setPageState('results');
-    }, 3000);
+    setTimeout(() => { setPageState('results'); }, 3000);
   };
 
   const genderEmojis: { [key: string]: string } = {
