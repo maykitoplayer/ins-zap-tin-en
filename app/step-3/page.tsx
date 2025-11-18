@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import Script from "next/script" // Importa o componente <Script> do Next.js
-import { Loader2, CheckCircle, MapPin } from 'lucide-react'
+import { Loader2, CheckCircle, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 // Interface para definir a estrutura de cada passo do progresso
@@ -42,36 +42,31 @@ export default function Step3() {
     )
 
     const fetchLocation = async () => {
-      try {
-        // Cria um AbortController com um timeout de 5 segundos
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000)
+  try {
+    // Cria um AbortController com um timeout de 5 segundos
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-        // Chama a sua API interna em /api/location
-        const response = await fetch("/api/location", {
-          signal: controller.signal,
-        })
-        clearTimeout(timeoutId)
+    // Chama a sua API interna em /api/location
+    const response = await fetch("/api/location", {
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
 
-        if (!response.ok) throw new Error("Failed to fetch location from internal API")
-        const data = await response.json()
-        
-        // Define a localização com base na resposta da sua API
-        setLocation(data.city || "Unknown Location") 
-      } catch (error) {
-        // Falha silenciosa com um fallback
-        console.error("[v0] Location fetch error:", error)
-        setLocation("Your Location") // Fallback em caso de erro
-      }
-    }
+    if (!response.ok) throw new Error("Failed to fetch location from internal API")
+    const data = await response.json()
+    
+    // Define a localização com base na resposta da sua API
+    setLocation(data.city || "Unknown Location") 
+  } catch (error) {
+    // Falha silenciosa com um fallback
+    console.error("[v0] Location fetch error:", error)
+    setLocation("Your Location") // Fallback em caso de erro
+  }
+}
 
     // Call fetchLocation without awaiting to prevent blocking
     fetchLocation()
-
-    trackEvent('page_view', {
-      page_title: 'Step 3 - Processing',
-      page_path: '/step-3',
-    });
   }, [])
 
   // Memoiza a lista de passos para que ela seja recriada apenas quando a 'location' mudar
@@ -150,24 +145,8 @@ export default function Step3() {
     }
   }, [steps, currentSteps.length])
 
-  useEffect(() => {
-    if (isCompleted) {
-      trackConversion(0, 'USD');
-      trackEvent('lead_submitted', {
-        phone_number: phoneNumber,
-        location: location,
-        gender: localStorage.getItem('selectedGender') || 'unknown',
-      });
-    }
-  }, [isCompleted, phoneNumber, location])
-
   // Navega para o próximo passo (página 4)
   const handleViewReport = () => {
-    trackEvent('button_click', {
-      button_name: 'View Full Report',
-      step: 3,
-    });
-    
     const selectedGender = localStorage.getItem("selectedGender") || "male"
     if (selectedGender === "female") {
       router.push("/step-4/female")
