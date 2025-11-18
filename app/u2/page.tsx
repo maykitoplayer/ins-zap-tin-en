@@ -74,21 +74,22 @@ export default function Upsell2Page() {
   };
 
   const genderEmojis: { [key: string]: string } = {
-    'Male': '👨🏻',
-    'Female': '👩🏻',
-    'Non-binary': '🧑🏻'
-  };
+  'Male': '👨🏻',
+  'Female': '👩🏻',
+  'Non-binary': '🧑🏻'
+};
   
   // 4. ESTRUTURA DE RENDERIZAÇÃO CONDICIONAL
   return (
     <>
-     {/* ====================================================== */}
+
+{/* ====================================================== */}
       {/*                FAIXA DE ATENÇÃO ADICIONADA             */}
       {/* ====================================================== */}
       <div className="fixed top-0 w-full z-50 bg-red-600 text-white p-2 text-center text-sm font-semibold">
         <span className="font-bold text-yellow-400">Attention:</span> do not close this page, Your payment is still being processed.
       </div>
-
+    
       <Script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js" strategy="afterInteractive" />
       {selectedMatch && <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />}
 
@@ -98,7 +99,7 @@ export default function Upsell2Page() {
           {/* ETAPA 1: INPUT DE FOTO E GÊNERO */}
           {pageState === 'input' && (
             <div className="space-y-6 animate-fade-in">
-             {/* ====================================================== */}
+            {/* ====================================================== */}
     {/*                SEU TEXTO ADICIONADO AQUI               */}
     {/* ====================================================== */}
     <p className="text-lg text-center text-gray-800 pt-5">
@@ -118,7 +119,7 @@ export default function Upsell2Page() {
                 <p className="text-sm text-gray-500 mt-4">We'll scan across all dating platforms to find matching profiles - even ones they think are hidden.</p>
               </div>
               
-             {/* Card de Seleção de Gênero */}
+              {/* Card de Seleção de Gênero */}
 <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
   <h2 className="text-xl font-bold text-gray-800 mb-4">What gender are they?</h2>
   <div className="grid grid-cols-3 gap-4">
@@ -138,23 +139,16 @@ export default function Upsell2Page() {
     This helps us track their device activity and cross-reference with dating app usage patterns.
   </p>
 </div>
-  
-  {/* TEXTO ADICIONADO AQUI */}
-  <p className="text-sm text-gray-500 mt-4">
-    This helps us track their device activity and cross-reference with dating app usage patterns.
-  </p>
-
-</div>
 
               {/* Botão para Iniciar */}
-              <button 
-                onClick={handleStartInvestigation} 
-                disabled={!imagePreview || !selectedGender}
-                className="w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed bg-destructive"
-              >
-                <Search size={20}/>
-                <span>START INVESTIGATION - FIND THE TRUTH</span>
-              </button>
+<button 
+  onClick={handleStartInvestigation} 
+  disabled={!imagePreview || !selectedGender}
+  className="w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700"
+>
+  <Search size={20}/>
+  <span>START INVESTIGATION - FIND THE TRUTH</span>
+</button>
             </div>
           )}
 
