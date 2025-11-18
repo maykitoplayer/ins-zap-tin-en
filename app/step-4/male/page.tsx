@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Lock, CheckCheck, MapPin, AlertTriangle } from "lucide-react"
+import { X, Lock, CheckCheck, MapPin, AlertTriangle } from 'lucide-react'
 import Image from "next/image"
+
 
 // Componente do mapa que agora recebe a localização via props para ser dinâmico.
 const RealtimeMap = ({ lat, lng, city, country }: { lat: number; lng: number; city: string; country: string }) => {
@@ -81,7 +82,7 @@ const ChatPopup = ({
               src={
                 profilePhoto ||
                 "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI="
-              }
+               || "/placeholder.svg"}
               alt="Profile"
               width={40}
               height={40}
@@ -148,6 +149,11 @@ export default function Step4Male() {
 
   // Bloco useEffect corrigido para usar a API Route interna.
   useEffect(() => {
+    trackEvent('page_view', {
+      page_title: 'Step 4 - Report Details',
+      page_path: '/step-4/male',
+    });
+
     const storedPhoto = localStorage.getItem("profilePhoto")
     setProfilePhoto(
       storedPhoto ||
@@ -231,6 +237,15 @@ export default function Step4Male() {
     { word: "Hidden", count: 11 }, { word: "Don't tell", count: 5 },
   ];
 
+  const handleBuyNow = () => {
+    trackEvent('purchase_button_clicked', {
+      step: 4,
+      product: 'full_report_with_tracking',
+      price: 37,
+    });
+    trackConversion(37, 'USD');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -246,7 +261,7 @@ export default function Step4Male() {
           <div className="flex justify-center">
             <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
               {profilePhoto && (
-                <Image src={profilePhoto} alt="WhatsApp Profile" width={80} height={80} className="object-cover h-full w-full" unoptimized />
+                <Image src={profilePhoto || "/placeholder.svg"} alt="WhatsApp Profile" width={80} height={80} className="object-cover h-full w-full" unoptimized />
               )}
             </div>
           </div>
@@ -265,7 +280,7 @@ export default function Step4Male() {
           <div className="space-y-3">
             {conversations.map((convo, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => setSelectedConvoIndex(index)}>
-                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-gray-300 rounded-full overflow-hidden"><Image src={convo.img} alt="Profile" width={32} height={32} className="object-cover h-full w-full" /></div><div><p className="font-medium text-sm">{convo.name}</p><p className="text-xs text-gray-500">{convo.msg}</p></div></div><span className="text-xs text-gray-400">{convo.time}</span>
+                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-gray-300 rounded-full overflow-hidden"><Image src={convo.img || "/placeholder.svg"} alt="Profile" width={32} height={32} className="object-cover h-full w-full" /></div><div><p className="font-medium text-sm">{convo.name}</p><p className="text-xs text-gray-500">{convo.msg}</p></div></div><span className="text-xs text-gray-400">{convo.time}</span>
               </div>
             ))}
           </div>
@@ -282,7 +297,7 @@ export default function Step4Male() {
           </p>
           <div className="grid grid-cols-3 gap-3">
             {maleImages.map((image, index) => (
-              <div key={index} className="aspect-square relative rounded-lg overflow-hidden"><Image src={image} alt={`Recovered media ${index + 1}`} fill className="object-cover" /></div>
+              <div key={index} className="aspect-square relative rounded-lg overflow-hidden"><Image src={image || "/placeholder.svg"} alt={`Recovered media ${index + 1}`} fill className="object-cover" /></div>
             ))}
           </div>
         </div>
@@ -330,7 +345,12 @@ export default function Step4Male() {
           <div className="text-xl text-red-400 line-through text-center my-2">$197</div>
           <div className="text-4xl font-bold mb-4 text-center">$37</div>
           <div className="space-y-2 text-sm mb-6 text-left"><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>This person recently communicated whith 3 people from (IP)</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>Our AI detected a suspicious message</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was deteced that this person viewed the status of contact ****** 6 times today</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person archived 2 conversations yesterday</span></div></div>
-          <a href="https://pay.hotmart.com/R102720481T?off=m3prb7n1&checkoutMode=10" target="_blank" rel="noopener noreferrer" className="block w-full rounded-full bg-[#26d366] py-3 text-lg font-bold text-white text-center shadow-[0_4px_12px_rgba(38,211,102,0.3)] transition duration-150 ease-in-out hover:bg-[#22b858] hover:shadow-lg">BUY NOW →</a>
+          <a 
+            href="https://pay.hotmart.com/R102720481T?off=m3prb7n1&checkoutMode=10" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={handleBuyNow}
+            className="block w-full rounded-full bg-[#26d366] py-3 text-lg font-bold text-white text-center shadow-[0_4px_12px_rgba(38,211,102,0.3)] transition duration-150 ease-in-out hover:bg-[#22b858] hover:shadow-lg">BUY NOW →</a>
         </div>
 
         {/* Garantia de 30 Dias */}

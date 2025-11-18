@@ -36,7 +36,7 @@ export default function Step1() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
-            Today it's a <span className="text-red-500">like</span> Tomorrow, a <span className="text-red-500">conversation.</span> And after?<br />
+            Today it's a <span className="text-red-500">like.</span> Tomorrow, a <span className="text-red-500">conversation.</span> And after?<br />
           </h1>
 
           <p className="text-lg text-gray-300 mb-8 max-w-xl">

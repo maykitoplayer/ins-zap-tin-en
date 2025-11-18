@@ -1,9 +1,6 @@
 import type React from "react"
-import type { Metadata } from "next"
 import Script from "next/script" // 1. Importar o componente Script
 import "./globals.css"
-
-
 
 export default function RootLayout({
   children,
@@ -24,7 +21,7 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           ></iframe>
         </noscript>
-        
+
         {children}
 
         {/* 2. Usar o componente <Script> em vez da tag <script> manual */}
@@ -39,5 +36,7 @@ export default function RootLayout({
 }
 
 export const metadata = {
-      generator: 'v0.app'
-    };
+  generator: "v0.app",
+  title: "Análise de WhatsApp",
+  description: "Ferramenta avançada de análise de perfil WhatsApp com rastreamento GPS",
+}

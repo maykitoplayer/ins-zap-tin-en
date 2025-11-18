@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { User, CheckCircle, Heart, MessageCircle, Lock, AlertTriangle, Wifi, LockOpen } from 'lucide-react'
-
 // ==========================================================
 // DADOS DOS PERFIS E IMAGENS
 // ==========================================================
@@ -190,6 +189,10 @@ export default function Step2() {
       return
     }
     setIsLoading(true)
+    trackEvent('profile_search', {
+      username: sanitizedUser,
+      step: 2,
+    });
     debounceTimer.current = setTimeout(async () => {
       const cachedProfile = getProfileFromCache(sanitizedUser)
       if (cachedProfile) {
@@ -199,6 +202,11 @@ export default function Step2() {
           setProfileImageUrl(proxyUrl)
         }
         setIsLoading(false)
+        trackEvent('profile_found', {
+          username: sanitizedUser,
+          followers: cachedProfile.follower_count,
+          source: 'cache',
+        });
         return
       }
       try {
@@ -218,9 +226,18 @@ export default function Step2() {
           const proxyUrl = `/api/instagram/image?url=${encodeURIComponent(profile.profile_pic_url)}`
           setProfileImageUrl(proxyUrl)
         }
+        trackEvent('profile_found', {
+          username: sanitizedUser,
+          followers: profile.follower_count,
+          source: 'api',
+        });
       } catch (err: any) {
         setError(err.message)
         setProfileData(null)
+        trackEvent('profile_error', {
+          username: sanitizedUser,
+          error: err.message,
+        });
       } finally {
         setIsLoading(false)
       }
@@ -228,6 +245,11 @@ export default function Step2() {
   }
 
   const handleContinueClick = () => {
+    trackEvent('step2_continue_clicked', {
+      gender: selectedGender,
+      profile_username: instagramHandle,
+      step: 2,
+    });
     setStep(2)
     setLoadingProgress(0)
     const interval = setInterval(() => {
@@ -243,6 +265,10 @@ export default function Step2() {
       setLoadingProgress(100)
       setTimeout(() => {
         setStep(3)
+        trackEvent('results_view', {
+          gender: selectedGender,
+          step: 3,
+        });
       }, 500)
     }, 4000)
   }
@@ -299,15 +325,24 @@ export default function Step2() {
         <h3 className="text-lg font-semibold text-gray-800">What gender are they?</h3>
         <div className="grid grid-cols-3 gap-3">
             <button
-                onClick={() => setSelectedGender('male')}
+                onClick={() => {
+                  setSelectedGender('male')
+                  trackEvent('gender_selected', { gender: 'male' });
+                }}
                 className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'male' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
             ><span className="text-3xl">👱‍♂️</span><span className="font-medium text-sm text-gray-700">Male</span></button>
             <button
-                onClick={() => setSelectedGender('female')}
+                onClick={() => {
+                  setSelectedGender('female')
+                  trackEvent('gender_selected', { gender: 'female' });
+                }}
                 className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'female' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
             ><span className="text-3xl">👱‍♀️</span><span className="font-medium text-sm text-gray-700">Female</span></button>
             <button
-                onClick={() => setSelectedGender('non-binary')}
+                onClick={() => {
+                  setSelectedGender('non-binary')
+                  trackEvent('gender_selected', { gender: 'non-binary' });
+                }}
                 className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'non-binary' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
             ><span className="text-3xl">👱</span><span className="font-medium text-sm text-gray-700">Non-binary</span></button>
         </div>
@@ -379,7 +414,17 @@ export default function Step2() {
         </div>
         
         {/* --- MAIN BUTTON AND PRICE --- */}
-        <a href="https://pay.hotmart.com/P102903672F?checkoutMode=10" className="mt-6 block w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 rounded-lg transition-colors shadow-lg hover:shadow-xl">
+        <a 
+          href="https://pay.hotmart.com/P102903672F?checkoutMode=10"
+          onClick={() => {
+            trackEvent('purchase_button_clicked', {
+              step: 2,
+              product: 'complete_report',
+              price: 37,
+            });
+          }}
+          className="mt-6 block w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+        >
           🔓 YES, I WANT THE COMPLETE REPORT
         </a>
         <div className="mt-4 text-center">
@@ -435,7 +480,7 @@ export default function Step2() {
         </div>
       </main>
       <footer className="py-4 mt-4">
-        <p className="text-xs text-white">© 2024. All rights reserved.</p>
+        <p className="text-xs text-white">© 2025. All rights reserved.</p>
       </footer>
     </div>
   )
