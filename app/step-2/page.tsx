@@ -120,6 +120,10 @@ export default function Step2() {
   const [randomizedResults, setRandomizedResults] = useState<Array<{ username: string; image: string; type: 'like' | 'message' }>>([]);
   const [interceptedImages, setInterceptedImages] = useState<Array<{ image: string; comment: string }>>([]);
 
+  // Estados adicionados para WhatsApp
+  const [isPhotoPrivate, setIsPhotoPrivate] = useState(false)
+  const [whatsappPhone, setWhatsappPhone] = useState("")
+
   // Função para embaralhar e pegar N itens de um array
   const shuffleAndPick = (arr: any[], num: number) => {
     return [...arr].sort(() => 0.5 - Math.random()).slice(0, num);
@@ -227,6 +231,37 @@ export default function Step2() {
     }, 1200)
   }
 
+  // Função para buscar foto do WhatsApp
+  const handleWhatsappPhotoFetch = async (phoneNumber: string, countryCode: string) => {
+    setWhatsappPhone(phoneNumber)
+    setIsPhotoPrivate(false)
+    
+    try {
+      const response = await fetch("/api/whatsapp-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneNumber, countryCode }),
+      })
+      
+      const result = await response.json()
+      
+      if (result.is_photo_private) {
+        setIsPhotoPrivate(true)
+        localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
+      } else if (result.success && result.result) {
+        setIsPhotoPrivate(false)
+        localStorage.setItem("profilePhoto", result.result)
+      } else {
+        setIsPhotoPrivate(true)
+        localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching WhatsApp photo:", error)
+      setIsPhotoPrivate(true)
+      localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
+    }
+  }
+
   const handleContinueClick = () => {
     setStep(2)
     setLoadingProgress(0)
@@ -321,12 +356,46 @@ export default function Step2() {
         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <Input type="text" placeholder="username" autoComplete="off" className="w-full bg-white border-2 border-black/20 text-black pl-12 h-14 text-base rounded-lg focus:border-pink-500 focus:ring-pink-500/50 shadow-inner" value={instagramHandle} onChange={(e) => handleInstagramChange(e.target.value)} />
       </div>
+      <div className="relative w-full mt-4">
+        <div className="flex gap-2">
+          <div className="w-20">
+            <div className="bg-white border-2 border-black/20 rounded-lg px-3 h-14 flex items-center text-black font-medium text-sm">
+              +55
+            </div>
+          </div>
+          <Input 
+            type="tel" 
+            placeholder="WhatsApp number" 
+            className="flex-1 bg-white border-2 border-black/20 text-black h-14 text-base rounded-lg focus:border-pink-500" 
+            value={whatsappPhone}
+            onChange={(e) => setWhatsappPhone(e.target.value)}
+          />
+        </div>
+      </div>
+      {isPhotoPrivate && (
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+          <div className="text-left">
+            <p className="font-bold text-red-700 text-sm">This number has a private profile.</p>
+            <p className="text-red-600 text-xs mt-1">We cannot load the photo, but you can still continue with the analysis.</p>
+          </div>
+        </div>
+      )}
       <div className="w-full min-h-[140px] bg-muted">
         {isLoading && (<div className="p-4 bg-pink-50 rounded-lg border-2 border-pink-400 animate-pulse"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-full bg-pink-200"></div><div className="flex-1 space-y-2"><div className="h-4 bg-pink-200 rounded w-3/4"></div><div className="h-3 bg-pink-200 rounded w-1/2"></div></div></div></div>)}
         {!isLoading && error && <p className="text-red-600 font-semibold">{error}</p>}
         {!isLoading && profileData && renderProfileCard(profileData)}
       </div>
-      <button onClick={handleContinueClick} disabled={!profileData || isLoading} className="w-full py-4 text-lg font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100">➜ CONTINUE</button>
+      <button 
+        onClick={() => {
+          handleWhatsappPhotoFetch(whatsappPhone, "55")
+          handleContinueClick()
+        }} 
+        disabled={!profileData || !whatsappPhone || isLoading} 
+        className="w-full py-4 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+      >
+        🔐 Clone WhatsApp Now
+      </button>
     </>
   );
 
