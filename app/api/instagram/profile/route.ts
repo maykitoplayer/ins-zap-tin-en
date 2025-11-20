@@ -20,12 +20,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, profile: cached.profile }, { status: 200 })
     }
 
-    console.log(`[v0] Iniciando busca para: ${cleanUsername} (Usando apenas Media API)`)
-
+    console.log(`[v0] Iniciando busca para: ${cleanUsername}`)
     let userId = null;
 
     // =================================================================================
-    // PASSO 1: OBTER ID PELO USERNAME (getUserIdByUsername)
+    // PASSO 1: OBTER ID (getUserIdByUsername)
     // =================================================================================
     try {
         const idUrl = "https://instagram-media-api.p.rapidapi.com/user/id";
@@ -33,28 +32,23 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
                 "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // Mesma API para tudo
+                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com",
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                username: cleanUsername,
-                proxy: ""
-            }),
+            body: JSON.stringify({ username: cleanUsername, proxy: "" }),
             signal: AbortSignal.timeout?.(10_000)
         });
 
         if (idResponse.ok) {
             const idData = await idResponse.json();
-            // A resposta geralmente vem como { "response": "12345..." } ou { "user_id": 123... }
-            // Ajustamos para pegar o ID onde quer que ele venha
-            userId = idData.response || idData.user_id || idData.id || idData.data?.id;
-            
+            // Tenta pegar o ID de várias formas possíveis
+            userId = idData.response || idData.user_id || idData.id || idData.data?.id || idData.pk;
             console.log(`[v0] Passo 1: ID encontrado -> ${userId}`);
         } else {
-            console.error(`[v0] Erro ao pegar ID: ${idResponse.status}`);
+            console.error(`[v0] Erro Passo 1: Status ${idResponse.status}`);
         }
     } catch (e) {
-        console.error("[v0] Erro de conexão no Passo 1:", e);
+        console.error("[v0] Erro Passo 1:", e);
     }
 
     if (!userId) {
@@ -62,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // =================================================================================
-    // PASSO 2: OBTER DETALHES PELO ID (userInfoProfile)
+    // PASSO 2: OBTER DETALHES (userInfoProfile)
     // =================================================================================
     let userRaw = null;
 
@@ -72,26 +66,37 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
                 "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // Mesma API
+                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com",
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                userid: String(userId), // O ID que pegamos no passo 1
-                proxy: ""
-            }),
+            body: JSON.stringify({ userid: String(userId), proxy: "" }),
             signal: AbortSignal.timeout?.(15_000)
         });
 
         if (infoResponse.ok) {
             const data = await infoResponse.json();
-            userRaw = data.data || data.user || data;
-            console.log("[v0] Passo 2: Detalhes recebidos com sucesso.");
+            
+            // --- DEBUG IMPORTANTE ---
+            // Veja no seu terminal o que aparece aqui se a imagem continuar quebrada
+            console.log("[v0] JSON Recebido (Passo 2):", JSON.stringify(data).substring(0, 300)); 
+
+            // Lógica "Caça-Usuário": Procura o objeto user em todos os lugares comuns
+            if (data.user) {
+                userRaw = data.user; // Caso 1: Direto na raiz
+            } else if (data.data && data.data.user) {
+                userRaw = data.data.user; // Caso 2: Dentro de data
+            } else if (data.response && data.response.user) {
+                userRaw = data.response.user; // Caso 3: Dentro de response
+            } else {
+                userRaw = data; // Fallback: Tenta usar a raiz
+            }
+
         } else {
-            console.error(`[v0] Erro ao pegar detalhes: ${infoResponse.status}`);
+            console.error(`[v0] Erro Passo 2: Status ${infoResponse.status}`);
         }
 
     } catch (error) {
-        console.error("[v0] Erro de conexão no Passo 2:", error);
+        console.error("[v0] Erro Passo 2:", error);
     }
 
     if (!userRaw) {
@@ -99,26 +104,42 @@ export async function POST(request: NextRequest) {
     }
 
     // =================================================================================
-    // MONTAGEM DA RESPOSTA
+    // EXTRAÇÃO E TRATAMENTO DE DADOS
     // =================================================================================
     
+    // 1. Foto de Perfil (Procura em todas as variações possíveis)
     const originalImageUrl = userRaw.hd_profile_pic_url_info?.url || 
                              userRaw.profile_pic_url_hd || 
-                             userRaw.profile_pic_url || "";
+                             userRaw.profile_pic_url || 
+                             userRaw.profile_pic_id || // Algumas APIs retornam ID aqui, mas tentamos
+                             "";
 
     let finalProfilePic = "";
-    if (originalImageUrl && originalImageUrl.startsWith("http")) {
+    // Só aplica o proxy se achou um link HTTP válido
+    if (originalImageUrl && String(originalImageUrl).startsWith("http")) {
         finalProfilePic = `/api/instagram/image?url=${encodeURIComponent(originalImageUrl)}`;
     }
 
+    // 2. Nome Completo
+    const fullName = userRaw.full_name || userRaw.fullName || userRaw.fullname || "";
+
+    // 3. Biografia
+    const biography = userRaw.biography || userRaw.bio || "";
+
+    // 4. Números (Seguidores, etc)
+    // Nota: Se a API retornar 0, mantemos 0.
+    const followers = userRaw.follower_count || userRaw.edge_followed_by?.count || 0;
+    const following = userRaw.following_count || userRaw.edge_follow?.count || 0;
+    const media = userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0;
+
     const profileData = {
         username: userRaw.username || cleanUsername,
-        full_name: userRaw.full_name || userRaw.fullName || "",
-        biography: userRaw.biography || userRaw.bio || "",
+        full_name: fullName,
+        biography: biography,
         profile_pic_url: finalProfilePic,
-        follower_count: userRaw.follower_count || userRaw.edge_followed_by?.count || 0,
-        following_count: userRaw.following_count || userRaw.edge_follow?.count || 0,
-        media_count: userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0,
+        follower_count: followers,
+        following_count: following,
+        media_count: media,
         is_private: userRaw.is_private || false,
         is_verified: userRaw.is_verified || false,
         category: userRaw.category || "",
