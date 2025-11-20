@@ -20,42 +20,84 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, profile: cached.profile }, { status: 200 })
     }
 
-    console.log(`[v0] Iniciando busca para: ${cleanUsername}`)
+    console.log(`[v0] --- Iniciando busca HÍBRIDA para: ${cleanUsername} ---`)
     let userId = null;
+    let fallbackData = null;
 
     // =================================================================================
-    // PASSO 1: OBTER ID
+    // PASSO 1: OBTER ID (Voltar para a SOCIAL API / BUSCA)
+    // Motivo: Ela é mais garantida para achar o usuário do que a endpoint /user/id
     // =================================================================================
     try {
-        const idUrl = "https://instagram-media-api.p.rapidapi.com/user/id";
-        const idResponse = await fetch(idUrl, {
-            method: "POST",
+        // console.log("[v0] Tentando obter ID via Social API (Busca)...");
+        const searchUrl = `https://instagram-social-api.p.rapidapi.com/v1/search_users?search_query=${cleanUsername}`;
+        
+        const searchResponse = await fetch(searchUrl, {
+            method: "GET",
             headers: {
                 "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com",
-                "Content-Type": "application/json"
+                "X-RapidAPI-Host": "instagram-social-api.p.rapidapi.com", // Usando a Social para achar o ID
             },
-            body: JSON.stringify({ username: cleanUsername, proxy: "" }),
             signal: AbortSignal.timeout?.(10_000)
         });
 
-        if (idResponse.ok) {
-            const idData = await idResponse.json();
-            userId = idData.response || idData.user_id || idData.id || idData.data?.id || idData.pk;
-            console.log(`[v0] Passo 1: ID encontrado -> ${userId}`);
-        } else {
-            console.error(`[v0] Erro Passo 1: Status ${idResponse.status}`);
+        if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            
+            // Lógica de extração da lista
+            let items = searchData.items || searchData.users || (Array.isArray(searchData) ? searchData : []);
+            
+            if (items && items.length > 0) {
+                const getUser = (i: any) => i.user || i;
+                
+                // Tenta match exato
+                const exactMatch = items.find((i: any) => getUser(i).username?.toLowerCase() === cleanUsername.toLowerCase());
+                // Se não achar exato, pega o primeiro
+                const bestMatch = exactMatch ? getUser(exactMatch) : getUser(items[0]);
+
+                if (bestMatch) {
+                    userId = bestMatch.pk || bestMatch.id;
+                    fallbackData = bestMatch; // Guarda dados básicos caso o passo 2 falhe
+                    console.log(`[v0] ID encontrado (Social API): ${userId}`);
+                }
+            }
         }
     } catch (e) {
-        console.error("[v0] Erro Passo 1:", e);
+        console.error("[v0] Falha na busca Social API:", e);
+    }
+
+    // TENTATIVA 2: Se a Social falhou, tenta a Media API /user/id (Fallback)
+    if (!userId) {
+        try {
+             // console.log("[v0] Social falhou, tentando Media API /user/id...");
+             const idUrl = "https://instagram-media-api.p.rapidapi.com/user/id";
+             const idResponse = await fetch(idUrl, {
+                method: "POST",
+                headers: {
+                    "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
+                    "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username: cleanUsername, proxy: "" }),
+                signal: AbortSignal.timeout?.(8_000)
+            });
+            if (idResponse.ok) {
+                const idData = await idResponse.json();
+                userId = idData.response || idData.user_id || idData.id || idData.data?.id;
+                console.log(`[v0] ID encontrado (Media API): ${userId}`);
+            }
+        } catch(e) {
+            console.error("[v0] Falha na busca Media API:", e);
+        }
     }
 
     if (!userId) {
+        console.log("[v0] ERRO FINAL: Usuário não encontrado em nenhuma API.");
         return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
     // =================================================================================
-    // PASSO 2: OBTER DETALHES
+    // PASSO 2: OBTER DETALHES (Media API /user/info)
     // =================================================================================
     let userRaw = null;
 
@@ -75,17 +117,20 @@ export async function POST(request: NextRequest) {
         if (infoResponse.ok) {
             const data = await infoResponse.json();
             
-            // Estratégia de extração robusta
+            // Estratégia de extração "Caça-Dados"
             if (data.user) userRaw = data.user;
             else if (data.data && data.data.user) userRaw = data.data.user;
             else if (data.response && data.response.user) userRaw = data.response.user;
-            else userRaw = data;
-
-        } else {
-            console.error(`[v0] Erro Passo 2: Status ${infoResponse.status}`);
-        }
+            else userRaw = data; // Tenta raiz
+        } 
     } catch (error) {
         console.error("[v0] Erro Passo 2:", error);
+    }
+
+    // Se o Passo 2 falhou (veio vazio ou erro), usa os dados do Passo 1 (Fallback)
+    if (!userRaw || (!userRaw.username && !userRaw.pk)) {
+        console.log("[v0] Usando dados de Fallback (Busca inicial)");
+        userRaw = fallbackData;
     }
 
     if (!userRaw) {
@@ -93,10 +138,9 @@ export async function POST(request: NextRequest) {
     }
 
     // =================================================================================
-    // EXTRAÇÃO DE DADOS
+    // EXTRAÇÃO DE DADOS E PROXY
     // =================================================================================
     
-    // 1. Foto de Perfil
     const originalImageUrl = userRaw.hd_profile_pic_url_info?.url || 
                              userRaw.profile_pic_url_hd || 
                              userRaw.profile_pic_url || 
@@ -104,35 +148,25 @@ export async function POST(request: NextRequest) {
                              "";
 
     let finalProfilePic = "";
-    // AQUI A MÁGICA: O backend gera o link do proxy
+    
+    // AQUI ESTA A CORREÇÃO: Só adiciona o proxy UMA vez aqui no backend
     if (originalImageUrl && String(originalImageUrl).startsWith("http")) {
-        // Se estiver rodando local ou prod, o caminho relativo funciona
         finalProfilePic = `/api/instagram/image?url=${encodeURIComponent(originalImageUrl)}`;
     }
 
-    // 2. Biografia (Tenta vários campos)
-    const biography = userRaw.biography || userRaw.bio || userRaw.description || "";
-
-    // 3. Números
-    const followers = userRaw.follower_count || userRaw.edge_followed_by?.count || 0;
-    const following = userRaw.following_count || userRaw.edge_follow?.count || 0;
-    const media = userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0;
-    const fullName = userRaw.full_name || userRaw.fullName || "";
-
     const profileData = {
         username: userRaw.username || cleanUsername,
-        full_name: fullName,
-        biography: biography,
-        profile_pic_url: finalProfilePic, // Retorna a URL já "proxied"
-        follower_count: followers,
-        following_count: following,
-        media_count: media,
+        full_name: userRaw.full_name || userRaw.fullName || "",
+        biography: userRaw.biography || userRaw.bio || "",
+        profile_pic_url: finalProfilePic,
+        follower_count: userRaw.follower_count || userRaw.edge_followed_by?.count || 0,
+        following_count: userRaw.following_count || userRaw.edge_follow?.count || 0,
+        media_count: userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0,
         is_private: userRaw.is_private || false,
         is_verified: userRaw.is_verified || false,
         category: userRaw.category || "",
     }
 
-    // Cache
     cache.set(cleanUsername, { profile: profileData, timestamp: Date.now() });
 
     return NextResponse.json({ success: true, profile: profileData }, { status: 200 });
