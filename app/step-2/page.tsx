@@ -205,22 +205,25 @@ export default function Step2() {
     setError("")
     setProfileData(null)
     setProfileImageUrl(null)
+    
     if (sanitizedUser.length < 3) {
       setIsLoading(false)
       return
     }
+    
     setIsLoading(true)
     debounceTimer.current = setTimeout(async () => {
+      // 1. Checa Cache
       const cachedProfile = getProfileFromCache(sanitizedUser)
       if (cachedProfile) {
         setProfileData(cachedProfile)
-        if (cachedProfile.profile_pic_url) {
-          const proxyUrl = `/api/instagram/image?url=${encodeURIComponent(cachedProfile.profile_pic_url)}`
-          setProfileImageUrl(proxyUrl)
-        }
+        // CORREÇÃO AQUI: Usar a URL direto, pois ela já vem com o proxy do backend
+        setProfileImageUrl(cachedProfile.profile_pic_url) 
         setIsLoading(false)
         return
       }
+
+      // 2. Busca API
       try {
         const response = await fetch("/api/instagram/profile", {
           method: "POST",
@@ -228,16 +231,18 @@ export default function Step2() {
           body: JSON.stringify({ username: sanitizedUser }),
         })
         const result = await response.json()
+        
         if (!response.ok || !result.success) {
           throw new Error(result.error || "Perfil não encontrado ou privado.")
         }
+        
         const profile = result.profile
         setProfileData(profile)
         setProfileLocalCache(sanitizedUser, profile)
-        if (profile.profile_pic_url) {
-          const proxyUrl = `/api/instagram/image?url=${encodeURIComponent(profile.profile_pic_url)}`
-          setProfileImageUrl(proxyUrl)
-        }
+        
+        // CORREÇÃO AQUI: Não adicionar /api/instagram/image de novo
+        setProfileImageUrl(profile.profile_pic_url) 
+
       } catch (err: any) {
         setError(err.message)
         setProfileData(null)
