@@ -9,22 +9,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Image URL is required" }, { status: 400 })
     }
 
-    console.log("[v0] Proxying Instagram image:", imageUrl.substring(0, 100) + "...")
+    // 1. Validação de Segurança (Whitelist)
+    // Permite apenas domínios de imagem do Meta/Instagram para evitar uso indevido do seu servidor
+    try {
+      const urlObj = new URL(imageUrl)
+      const allowedDomains = [
+        "instagram.com", 
+        "cdninstagram.com", 
+        "fbcdn.net", 
+        "scontent" // Comum em URLs do Instagram
+      ]
+      
+      const isAllowed = allowedDomains.some(domain => urlObj.hostname.includes(domain))
+      
+      if (!isAllowed) {
+        console.error(`[v0] Blocked attempt to proxy unauthorized domain: ${urlObj.hostname}`)
+        return NextResponse.json({ error: "Forbidden: Domain not allowed" }, { status: 403 })
+      }
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 })
+    }
+
+    console.log("[v0] Proxying Instagram image:", imageUrl.substring(0, 50) + "...")
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 segundos timeout
 
     try {
-      // Fetch the image from Instagram with timeout
       const response = await fetch(imageUrl, {
         headers: {
+          // 2. User-Agent atualizado (Chrome mais recente)
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Referer: "https://www.instagram.com/",
-          Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "Referer": "https://www.instagram.com/",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "Sec-Fetch-Dest": "image",
+          "Sec-Fetch-Mode": "no-cors",
+          "Sec-Fetch-Site": "cross-site"
         },
         signal: controller.signal,
       })
@@ -32,30 +53,29 @@ export async function GET(request: NextRequest) {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        console.error("[v0] Failed to fetch Instagram image:", response.status, response.statusText)
-        return NextResponse.json({ error: "Failed to fetch image" }, { status: response.status })
+        console.error("[v0] Failed to fetch Instagram image:", response.status)
+        return NextResponse.json({ error: "Failed to fetch image from source" }, { status: response.status })
       }
 
       const imageBuffer = await response.arrayBuffer()
       const contentType = response.headers.get("content-type") || "image/jpeg"
 
-      console.log("[v0] Successfully proxied Instagram image, size:", imageBuffer.byteLength, "bytes")
-
-      // Return the image with proper headers
+      // 3. Headers de Cache otimizados
       return new NextResponse(imageBuffer, {
         status: 200,
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=86400, immutable", // Cache for 24 hours
+          // Cache agressivo (público, 7 dias) para evitar bater no Instagram toda hora
+          "Cache-Control": "public, max-age=604800, immutable", 
           "Access-Control-Allow-Origin": "*",
         },
       })
     } catch (fetchError: any) {
       clearTimeout(timeoutId)
       if (fetchError.name === "AbortError") {
-        console.error("[v0] Instagram image fetch timeout")
         return NextResponse.json({ error: "Request timeout" }, { status: 504 })
       }
+      console.error("[v0] Error details:", fetchError)
       throw fetchError
     }
   } catch (error: any) {
