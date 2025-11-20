@@ -1,158 +1,156 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 const cache = new Map<string, { profile: any; timestamp: number }>()
-const CACHE_TTL = 10 * 60 * 1000 // 10 minutes
+const CACHE_TTL = 10 * 60 * 1000 // 10 minutos
 
 export async function POST(request: NextRequest) {
   try {
     const { username } = await request.json()
 
     if (!username) {
-      return NextResponse.json(
-        { success: false, error: "Username is required" },
-        {
-          status: 400,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        },
-      )
+      return NextResponse.json({ success: false, error: "Username is required" }, { status: 400 })
     }
 
-    // Remove @ if present
-    const cleanUsername = username.replace("@", "")
+    const cleanUsername = username.replace("@", "").trim()
 
-    // Check cache first
+    // 1. Verificar Cache (Economiza créditos)
     const cached = cache.get(cleanUsername)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log("[v0] Returning cached Instagram profile")
-      return NextResponse.json(
-        {
-          success: true,
-          profile: cached.profile,
-        },
-        {
-          status: 200,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        },
-      )
+      return NextResponse.json({ success: true, profile: cached.profile }, { status: 200 })
     }
 
-    // Fetch Instagram profile data using RapidAPI
-    const url = `https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=${cleanUsername}`
+    console.log(`[v0] Iniciando busca para: ${cleanUsername}`)
+    
+    // =================================================================================
+    // PASSO 1: Converter Username em ID (Usando a API de Busca / Social API)
+    // =================================================================================
+    let userId = null;
+    let searchFallbackData = null; // Caso a API principal falhe, usamos dados da busca
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-        "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com",
-      },
-      signal: AbortSignal.timeout?.(10_000),
-    })
+    try {
+        const searchUrl = `https://instagram-social-api.p.rapidapi.com/v1/search_users?search_query=${cleanUsername}`;
+        const searchResponse = await fetch(searchUrl, {
+            method: "GET",
+            headers: {
+                "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
+                "X-RapidAPI-Host": "instagram-social-api.p.rapidapi.com",
+            },
+            signal: AbortSignal.timeout?.(10_000)
+        });
 
-    if (response.status === 429) {
-      console.log("[v0] Rate limit exceeded for Instagram API")
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Rate limit exceeded. Please try again later.",
-        },
-        {
-          status: 429,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        },
-      )
+        if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            
+            // Lógica para achar o ID na lista
+            let items = searchData.items || searchData.users || (Array.isArray(searchData) ? searchData : []);
+            const getUser = (i: any) => i.user || i;
+            
+            // Procura match exato
+            const found = items.find((i: any) => getUser(i).username?.toLowerCase() === cleanUsername.toLowerCase());
+            const bestMatch = found ? getUser(found) : (items.length > 0 ? getUser(items[0]) : null);
+
+            if (bestMatch) {
+                userId = bestMatch.pk || bestMatch.id; // O ID numérico (Ex: 62015806293)
+                searchFallbackData = bestMatch; // Guarda dados básicos caso o passo 2 falhe
+                console.log(`[v0] ID encontrado: ${userId}`);
+            }
+        }
+    } catch (e) {
+        console.warn("[v0] Erro ao buscar ID:", e);
     }
 
-    if (!response.ok) {
-      console.error("[v0] Instagram API returned status:", response.status)
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to fetch Instagram profile",
-        },
-        {
-          status: response.status,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        },
-      )
+    if (!userId) {
+        return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const data = await response.json()
+    // =================================================================================
+    // PASSO 2: Usar a SUA NOVA API com o ID (userInfoProfile)
+    // =================================================================================
+    let userRaw = null;
 
-    console.log("[v0] Instagram API raw response:", JSON.stringify(data, null, 2))
+    try {
+        console.log(`[v0] Buscando detalhes completos na nova API para ID: ${userId}...`);
 
-    if (!data || !data.data) {
-      console.log("[v0] Invalid response from Instagram API")
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Profile not found",
-        },
-        {
-          status: 404,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        },
-      )
+        const newApiUrl = "https://instagram-media-api.p.rapidapi.com/user/info/";
+        const newApiResponse = await fetch(newApiUrl, {
+            method: "POST", // A sua nova API exige POST
+            headers: {
+                "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
+                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // HOST DA NOVA API
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userid: String(userId), // Envia o ID que descobrimos no passo 1
+                proxy: "" // Campo exigido pela sua nova API
+            }),
+            signal: AbortSignal.timeout?.(15_000)
+        });
+
+        if (newApiResponse.ok) {
+            const data = await newApiResponse.json();
+            // Tenta extrair o usuário da resposta (ajuste conforme o retorno da API)
+            userRaw = data.data || data.user || data;
+        } else {
+            console.warn(`[v0] Nova API falhou (Status ${newApiResponse.status}), usando dados de fallback.`);
+        }
+
+    } catch (error) {
+        console.error("[v0] Erro na nova API:", error);
+    }
+
+    // Se a API nova falhou, usa os dados da busca (Search API) como fallback
+    if (!userRaw || (!userRaw.username && !userRaw.pk)) {
+        userRaw = searchFallbackData;
+    }
+
+    if (!userRaw) {
+         return NextResponse.json({ success: false, error: "Profile data unavailable" }, { status: 404 });
+    }
+
+    // =================================================================================
+    // PASSO 3: Montar e Retornar os Dados
+    // =================================================================================
+    
+    // Extração de Imagem
+    const originalImageUrl = userRaw.hd_profile_pic_url_info?.url || 
+                             userRaw.profile_pic_url_hd || 
+                             userRaw.profile_pic_url || "";
+
+    // Aplica o Proxy
+    let finalProfilePic = "";
+    if (originalImageUrl && originalImageUrl.startsWith("http")) {
+        finalProfilePic = `/api/instagram/image?url=${encodeURIComponent(originalImageUrl)}`;
     }
 
     const profileData = {
-      username: data.data.username || cleanUsername,
-      full_name: data.data.full_name || data.data.fullName || "",
-      biography: data.data.biography || data.data.bio || "",
-      profile_pic_url: data.data.profile_pic_url || data.data.profile_pic_url_hd || data.data.profilePicUrl || "",
-      follower_count: data.data.follower_count || data.data.followerCount || data.data.edge_followed_by?.count || 0,
-      following_count: data.data.following_count || data.data.followingCount || data.data.edge_follow?.count || 0,
-      media_count: data.data.media_count || data.data.mediaCount || data.data.edge_owner_to_timeline_media?.count || 0,
-      is_private: data.data.is_private || data.data.isPrivate || false,
-      is_verified: data.data.is_verified || data.data.isVerified || false,
-      category: data.data.category || "",
+        username: userRaw.username || cleanUsername,
+        full_name: userRaw.full_name || userRaw.fullName || "",
+        biography: userRaw.biography || userRaw.bio || "",
+        profile_pic_url: finalProfilePic,
+        // A nova API deve retornar os contadores corretos
+        follower_count: userRaw.follower_count || userRaw.edge_followed_by?.count || 0,
+        following_count: userRaw.following_count || userRaw.edge_follow?.count || 0,
+        media_count: userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0,
+        is_private: userRaw.is_private || false,
+        is_verified: userRaw.is_verified || false,
+        category: userRaw.category || "",
     }
 
-    console.log("[v0] Extracted profile data:", JSON.stringify(profileData, null, 2))
+    // Salva no cache
+    cache.set(cleanUsername, { profile: profileData, timestamp: Date.now() });
 
-    // Cache the result
-    cache.set(cleanUsername, {
-      profile: profileData,
-      timestamp: Date.now(),
-    })
+    return NextResponse.json({ success: true, profile: profileData }, { status: 200 });
 
-    // Clean up old cache entries
-    if (cache.size > 100) {
-      const oldestKey = Array.from(cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0]
-      cache.delete(oldestKey)
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        profile: profileData,
-      },
-      {
-        status: 200,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      },
-    )
   } catch (err) {
-    console.error("[v0] Error fetching Instagram profile:", err)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-      },
-      {
-        status: 500,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      },
-    )
+    console.error("[v0] Server Error:", err)
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+    headers: { "Access-Control-Allow-Origin": "*" },
   })
 }
