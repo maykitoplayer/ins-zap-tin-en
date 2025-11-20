@@ -2,60 +2,77 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
-import { User, CheckCircle, Heart, MessageCircle, Lock, AlertTriangle, Wifi, LockOpen } from 'lucide-react'
+import { User, CheckCircle, Heart, MessageCircle, Lock, AlertTriangle, Wifi, LockOpen } from "lucide-react"
 
 // ==========================================================
 // DADOS DOS PERFIS E IMAGENS
 // ==========================================================
 // Perfis que interagem com o alvo
 const FEMALE_PROFILES = [
-  '@jessy_nutty', '@alexis_30', '@izes', '@maryjane434',
-  '@emma.whistle32', '@celina_anderson467', '@letty.miriah99'
-];
+  "@jessy_nutty",
+  "@alexis_30",
+  "@izes",
+  "@maryjane434",
+  "@emma.whistle32",
+  "@celina_anderson467",
+  "@letty.miriah99",
+]
 const FEMALE_IMAGES = [
-  '/images/male/perfil/1.jpg', '/images/male/perfil/2.jpg', '/images/male/perfil/3.jpg',
-  '/images/male/perfil/4.jpg', '/images/male/perfil/5.jpg', '/images/male/perfil/6.jpg',
-  '/images/male/perfil/7.jpg', '/images/male/perfil/8.jpg', '/images/male/perfil/9.jpg'
-];
+  "/images/male/perfil/1.jpg",
+  "/images/male/perfil/2.jpg",
+  "/images/male/perfil/3.jpg",
+  "/images/male/perfil/4.jpg",
+  "/images/male/perfil/5.jpg",
+  "/images/male/perfil/6.jpg",
+  "/images/male/perfil/7.jpg",
+  "/images/male/perfil/8.jpg",
+  "/images/male/perfil/9.jpg",
+]
 const MALE_PROFILES = [
-  '@john.doe92', '@mike_anderson', '@chris_williams', '@danny.smith',
-  '@liam.baker', '@noah_carter', '@ryan_hills'
-];
+  "@john.doe92",
+  "@mike_anderson",
+  "@chris_williams",
+  "@danny.smith",
+  "@liam.baker",
+  "@noah_carter",
+  "@ryan_hills",
+]
 const MALE_IMAGES = [
-  '/images/female/perfil/1.jpg', '/images/female/perfil/2.jpg', '/images/female/perfil/3.jpg',
-  '/images/female/perfil/4.jpg', '/images/female/perfil/5.jpg', '/images/female/perfil/6.jpg',
-  '/images/female/perfil/7.jpg', '/images/female/perfil/8.jpeg', '/images/female/perfil/9.jpg'
-];
+  "/images/female/perfil/1.jpg",
+  "/images/female/perfil/2.jpg",
+  "/images/female/perfil/3.jpg",
+  "/images/female/perfil/4.jpg",
+  "/images/female/perfil/5.jpg",
+  "/images/female/perfil/6.jpg",
+  "/images/female/perfil/7.jpg",
+  "/images/female/perfil/8.jpeg",
+  "/images/female/perfil/9.jpg",
+]
 
 // Imagens "interceptadas" (borradas) que o alvo curtiu
 const LIKED_BY_MALE_PHOTOS = [
-    '/images/male/liked/male-liked-photo-1.jpg',
-    '/images/male/liked/male-liked-photo-2.jpeg',
-    '/images/male/liked/male-liked-photo-3.jpeg',
-];
+  "/images/male/liked/male-liked-photo-1.jpg",
+  "/images/male/liked/male-liked-photo-2.jpeg",
+  "/images/male/liked/male-liked-photo-3.jpeg",
+]
 const LIKED_BY_MALE_STORIES = [
-    '/images/male/liked/male-liked-story-1.jpg',
-    '/images/male/liked/male-liked-story-2.jpg',
-    '/images/male/liked/male-liked-story-3.jpg',
-];
+  "/images/male/liked/male-liked-story-1.jpg",
+  "/images/male/liked/male-liked-story-2.jpg",
+  "/images/male/liked/male-liked-story-3.jpg",
+]
 const LIKED_BY_FEMALE_PHOTOS = [
-    '/images/female/liked/female-liked-photo-1.jpg',
-    '/images/female/liked/female-liked-photo-2.jpg',
-    '/images/female/liked/female-liked-photo-3.jpg',
-];
+  "/images/female/liked/female-liked-photo-1.jpg",
+  "/images/female/liked/female-liked-photo-2.jpg",
+  "/images/female/liked/female-liked-photo-3.jpg",
+]
 const LIKED_BY_FEMALE_STORIES = [
-    '/images/female/liked/female-liked-story-1.jpg',
-    '/images/female/liked/female-liked-story-2.jpg',
-    '/images/female/liked/female-liked-story3.jpg',
-];
+  "/images/female/liked/female-liked-story-1.jpg",
+  "/images/female/liked/female-liked-story-2.jpg",
+  "/images/female/liked/female-liked-story3.jpg",
+]
 
 // Array de comentários para a seção "INTERCEPTED"
-const INTERCEPTED_COMMENTS = [
-    "Wow, you are very hot 🥰",
-    "🫣😏",
-    "I'm getting horny 🥵",
-    "drives me crazy 😈"
-];
+const INTERCEPTED_COMMENTS = ["Wow, you are very hot 🥰", "🫣😏", "I'm getting horny 🥵", "drives me crazy 😈"]
 // ==========================================================
 
 // --- Funções auxiliares ---
@@ -90,24 +107,25 @@ const getProfileFromCache = (user: string): any | null => {
 }
 
 const PageHeader = () => (
-    <header className="w-full max-w-md mx-auto text-center px-4 pt-12 pb-8">
-        <div className="inline-block bg-white p-4 rounded-2xl shadow-lg mb-6">
-            <Wifi className="h-10 w-10 text-indigo-500" />
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            <span role="img" aria-label="magnifying glass">🔍</span> Help Us Find What They're Hiding
-        </h1>
-        <p className="text-white">
-            The more details you provide, the deeper we can dig. Everything stays 100% anonymous.
-        </p>
-    </header>
-);
+  <header className="w-full max-w-md mx-auto text-center px-4 pt-12 pb-8">
+    <div className="inline-block bg-white p-4 rounded-2xl shadow-lg mb-6">
+      <Wifi className="h-10 w-10 text-indigo-500" />
+    </div>
+    <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+      <span role="img" aria-label="magnifying glass">
+        🔍
+      </span>{" "}
+      Help Us Find What They're Hiding
+    </h1>
+    <p className="text-white">The more details you provide, the deeper we can dig. Everything stays 100% anonymous.</p>
+  </header>
+)
 
 // --- Componente da Página ---
 export default function Step2() {
   const [step, setStep] = useState(1)
   const [instagramHandle, setInstagramHandle] = useState("")
-  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -117,55 +135,53 @@ export default function Step2() {
   const [timeLeft, setTimeLeft] = useState(5 * 60)
 
   // Estados para armazenar os resultados sorteados
-  const [randomizedResults, setRandomizedResults] = useState<Array<{ username: string; image: string; type: 'like' | 'message' }>>([]);
-  const [interceptedImages, setInterceptedImages] = useState<Array<{ image: string; comment: string }>>([]);
-
-  // Estados adicionados para WhatsApp
-  const [isPhotoPrivate, setIsPhotoPrivate] = useState(false)
-  const [whatsappPhone, setWhatsappPhone] = useState("")
+  const [randomizedResults, setRandomizedResults] = useState<
+    Array<{ username: string; image: string; type: "like" | "message" }>
+  >([])
+  const [interceptedImages, setInterceptedImages] = useState<Array<{ image: string; comment: string }>>([])
 
   // Função para embaralhar e pegar N itens de um array
   const shuffleAndPick = (arr: any[], num: number) => {
-    return [...arr].sort(() => 0.5 - Math.random()).slice(0, num);
+    return [...arr].sort(() => 0.5 - Math.random()).slice(0, num)
   }
 
   // Lógica para sortear os perfis e imagens quando chegar no passo 3
   useEffect(() => {
     if (step === 3) {
       // 1. Sorteia perfis de interação
-      let profilesToUse = FEMALE_PROFILES;
-      let imagesToUse = FEMALE_IMAGES;
-      if (selectedGender === 'female') {
-        profilesToUse = MALE_PROFILES;
-        imagesToUse = MALE_IMAGES;
+      let profilesToUse = FEMALE_PROFILES
+      let imagesToUse = FEMALE_IMAGES
+      if (selectedGender === "female") {
+        profilesToUse = MALE_PROFILES
+        imagesToUse = MALE_IMAGES
       }
-      const randomUsernames = shuffleAndPick(profilesToUse, 3);
-      const randomImages = shuffleAndPick(imagesToUse, 3);
+      const randomUsernames = shuffleAndPick(profilesToUse, 3)
+      const randomImages = shuffleAndPick(imagesToUse, 3)
       const results = randomUsernames.map((username, index) => ({
         username,
         image: randomImages[index % randomImages.length],
-        type: Math.random() > 0.5 ? 'like' : 'message'
-      }));
-      setRandomizedResults(results);
+        type: Math.random() > 0.5 ? "like" : "message",
+      }))
+      setRandomizedResults(results)
 
       // 2. Sorteia 4 imagens "interceptadas" e 4 comentários
-      let allLikedImages = LIKED_BY_MALE_PHOTOS.concat(LIKED_BY_MALE_STORIES);
-      if (selectedGender === 'female') {
-          allLikedImages = LIKED_BY_FEMALE_PHOTOS.concat(LIKED_BY_FEMALE_STORIES);
+      let allLikedImages = LIKED_BY_MALE_PHOTOS.concat(LIKED_BY_MALE_STORIES)
+      if (selectedGender === "female") {
+        allLikedImages = LIKED_BY_FEMALE_PHOTOS.concat(LIKED_BY_FEMALE_STORIES)
       }
-      
-      const randomLikedImages = shuffleAndPick(allLikedImages, 4);
-      const randomComments = shuffleAndPick(INTERCEPTED_COMMENTS, 4);
+
+      const randomLikedImages = shuffleAndPick(allLikedImages, 4)
+      const randomComments = shuffleAndPick(INTERCEPTED_COMMENTS, 4)
 
       const newInterceptedData = randomLikedImages.map((img, index) => ({
-          image: img,
-          comment: randomComments[index % randomComments.length]
-      }));
-      
-      setInterceptedImages(newInterceptedData);
+        image: img,
+        comment: randomComments[index % randomComments.length],
+      }))
+
+      setInterceptedImages(newInterceptedData)
     }
-  }, [step, selectedGender]);
-  
+  }, [step, selectedGender])
+
   useEffect(() => {
     if (step === 3 && timeLeft > 0) {
       const timer = setInterval(() => {
@@ -231,37 +247,6 @@ export default function Step2() {
     }, 1200)
   }
 
-  // Função para buscar foto do WhatsApp
-  const handleWhatsappPhotoFetch = async (phoneNumber: string, countryCode: string) => {
-    setWhatsappPhone(phoneNumber)
-    setIsPhotoPrivate(false)
-    
-    try {
-      const response = await fetch("/api/whatsapp-photo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneNumber, countryCode }),
-      })
-      
-      const result = await response.json()
-      
-      if (result.is_photo_private) {
-        setIsPhotoPrivate(true)
-        localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
-      } else if (result.success && result.result) {
-        setIsPhotoPrivate(false)
-        localStorage.setItem("profilePhoto", result.result)
-      } else {
-        setIsPhotoPrivate(true)
-        localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching WhatsApp photo:", error)
-      setIsPhotoPrivate(true)
-      localStorage.setItem("profilePhoto", "/generic-profile-placeholder.png")
-    }
-  }
-
   const handleContinueClick = () => {
     setStep(2)
     setLoadingProgress(0)
@@ -282,9 +267,12 @@ export default function Step2() {
     }, 4000)
   }
 
-  useEffect(() => () => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    },
+    [],
+  )
 
   const renderProfileCard = (profile: any) => (
     <div
@@ -298,7 +286,11 @@ export default function Step2() {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4 text-left">
           {profileImageUrl ? (
-            <img src={profileImageUrl || "/placeholder.svg"} alt="profile" className="w-14 h-14 rounded-full object-cover filter grayscale" />
+            <img
+              src={profileImageUrl || "/placeholder.svg"}
+              alt="profile"
+              className="w-14 h-14 rounded-full object-cover filter grayscale"
+            />
           ) : (
             <div className="w-14 h-14 rounded-full bg-gray-700 animate-pulse"></div>
           )}
@@ -333,96 +325,197 @@ export default function Step2() {
       <div className="w-full text-left space-y-3">
         <h3 className="text-lg font-semibold text-gray-800">What gender are they?</h3>
         <div className="grid grid-cols-3 gap-3">
-            <button
-                onClick={() => setSelectedGender('male')}
-                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'male' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
-            ><span className="text-3xl">👱‍♂️</span><span className="font-medium text-sm text-gray-700">Male</span></button>
-            <button
-                onClick={() => setSelectedGender('female')}
-                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'female' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
-            ><span className="text-3xl">👱‍♀️</span><span className="font-medium text-sm text-gray-700">Female</span></button>
-            <button
-                onClick={() => setSelectedGender('non-binary')}
-                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${ selectedGender === 'non-binary' ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300' }`}
-            ><span className="text-3xl">👱</span><span className="font-medium text-sm text-gray-700">Non-binary</span></button>
+          <button
+            onClick={() => setSelectedGender("male")}
+            className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${selectedGender === "male" ? "border-indigo-500 bg-indigo-50 shadow-md" : "border-gray-200 bg-white hover:border-gray-300"}`}
+          >
+            <span className="text-3xl">👱‍♂️</span>
+            <span className="font-medium text-sm text-gray-700">Male</span>
+          </button>
+          <button
+            onClick={() => setSelectedGender("female")}
+            className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${selectedGender === "female" ? "border-indigo-500 bg-indigo-50 shadow-md" : "border-gray-200 bg-white hover:border-gray-300"}`}
+          >
+            <span className="text-3xl">👱‍♀️</span>
+            <span className="font-medium text-sm text-gray-700">Female</span>
+          </button>
+          <button
+            onClick={() => setSelectedGender("non-binary")}
+            className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center space-y-2 transition-all duration-200 transform hover:scale-105 ${selectedGender === "non-binary" ? "border-indigo-500 bg-indigo-50 shadow-md" : "border-gray-200 bg-white hover:border-gray-300"}`}
+          >
+            <span className="text-3xl">👱</span>
+            <span className="font-medium text-sm text-gray-700">Non-binary</span>
+          </button>
         </div>
       </div>
       <div className="flex items-center justify-center gap-3">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-pink-500"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" /><circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /></svg>
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="text-pink-500"
+        >
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+        </svg>
         <h1 className="text-2xl font-bold text-black tracking-wide">TARGET IDENTIFICATION</h1>
       </div>
       <p className="text-gray-600 !-mt-4 pt-6">Enter the @Instagram username below and perform a quick search.</p>
       <div className="relative w-full">
         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <Input type="text" placeholder="username" autoComplete="off" className="w-full bg-white border-2 border-black/20 text-black pl-12 h-14 text-base rounded-lg focus:border-pink-500 focus:ring-pink-500/50 shadow-inner" value={instagramHandle} onChange={(e) => handleInstagramChange(e.target.value)} />
+        <Input
+          type="text"
+          placeholder="username"
+          autoComplete="off"
+          className="w-full bg-white border-2 border-black/20 text-black pl-12 h-14 text-base rounded-lg focus:border-pink-500 focus:ring-pink-500/50 shadow-inner"
+          value={instagramHandle}
+          onChange={(e) => handleInstagramChange(e.target.value)}
+        />
       </div>
-      <div className="relative w-full mt-4">
-        <div className="flex gap-2">
-          <div className="w-20">
-            <div className="bg-white border-2 border-black/20 rounded-lg px-3 h-14 flex items-center text-black font-medium text-sm">
-              +55
+
+      <div className="w-full min-h-[140px] bg-muted">
+        {isLoading && (
+          <div className="p-4 bg-pink-50 rounded-lg border-2 border-pink-400 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-pink-200"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-pink-200 rounded w-3/4"></div>
+                <div className="h-3 bg-pink-200 rounded w-1/2"></div>
+              </div>
             </div>
           </div>
-          <Input 
-            type="tel" 
-            placeholder="WhatsApp number" 
-            className="flex-1 bg-white border-2 border-black/20 text-black h-14 text-base rounded-lg focus:border-pink-500" 
-            value={whatsappPhone}
-            onChange={(e) => setWhatsappPhone(e.target.value)}
-          />
-        </div>
-      </div>
-      {isPhotoPrivate && (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 flex items-start gap-3">
-          <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-          <div className="text-left">
-            <p className="font-bold text-red-700 text-sm">This number has a private profile.</p>
-            <p className="text-red-600 text-xs mt-1">We cannot load the photo, but you can still continue with the analysis.</p>
-          </div>
-        </div>
-      )}
-      <div className="w-full min-h-[140px] bg-muted">
-        {isLoading && (<div className="p-4 bg-pink-50 rounded-lg border-2 border-pink-400 animate-pulse"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-full bg-pink-200"></div><div className="flex-1 space-y-2"><div className="h-4 bg-pink-200 rounded w-3/4"></div><div className="h-3 bg-pink-200 rounded w-1/2"></div></div></div></div>)}
+        )}
         {!isLoading && error && <p className="text-red-600 font-semibold">{error}</p>}
         {!isLoading && profileData && renderProfileCard(profileData)}
       </div>
-      <button 
+      <button
         onClick={() => {
-          handleWhatsappPhotoFetch(whatsappPhone, "55")
           handleContinueClick()
-        }} 
-        disabled={!profileData || !whatsappPhone || isLoading} 
+        }}
+        disabled={!profileData || isLoading}
         className="w-full py-4 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
       >
-        🔐 Clone WhatsApp Now
+        🔍 Continue Analysis
       </button>
     </>
-  );
+  )
 
   const renderLoadingStep = () => (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-2xl font-bold text-black">Analyzing Profile...</h2>
       {profileData && renderProfileCard(profileData)}
       <div className="w-full space-y-3">
-        <p className="font-mono text-sm text-gray-700">[SCANNING] Cross-referencing databases... ({Math.floor(loadingProgress)}%)</p>
-        <div className="w-full bg-gray-200 rounded-full h-2.5"><div className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full" style={{ width: `${loadingProgress}%` }}></div></div>
+        <p className="font-mono text-sm text-gray-700">
+          [SCANNING] Cross-referencing databases... ({Math.floor(loadingProgress)}%)
+        </p>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full"
+            style={{ width: `${loadingProgress}%` }}
+          ></div>
+        </div>
       </div>
     </div>
-  );
-  
+  )
+
   const renderResultsStep = () => (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-xl"><CheckCircle size={24} /> Analysis Complete</div>
+      <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-xl">
+        <CheckCircle size={24} /> Analysis Complete
+      </div>
       {profileData && renderProfileCard(profileData)}
-      {randomizedResults.length > 0 && (<div className="p-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-sm text-left"><p><span className="text-green-600 font-bold">[SYSTEM_LOG]</span> New activity detected:</p><p className="ml-4"><span className="text-blue-600">[INSTAGRAM]</span> {randomizedResults[0].username} liked your photo.</p><p className="ml-4"><span className="text-blue-600">[INSTAGRAM]</span> New message from {randomizedResults[1]?.username || randomizedResults[0].username}.</p></div>)}
+      {randomizedResults.length > 0 && (
+        <div className="p-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-sm text-left">
+          <p>
+            <span className="text-green-600 font-bold">[SYSTEM_LOG]</span> New activity detected:
+          </p>
+          <p className="ml-4">
+            <span className="text-blue-600">[INSTAGRAM]</span> {randomizedResults[0].username} liked your photo.
+          </p>
+          <p className="ml-4">
+            <span className="text-blue-600">[INSTAGRAM]</span> New message from{" "}
+            {randomizedResults[1]?.username || randomizedResults[0].username}.
+          </p>
+        </div>
+      )}
       <div className="space-y-3 text-left">
-        {randomizedResults.length >= 3 && (<>{[0,1,2].map(i => (<div key={i} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm"><img src={randomizedResults[i].image || "/placeholder.svg"} alt="User Avatar" className="w-10 h-10 rounded-full object-cover" /><div className="flex-1 text-sm"><p className="text-gray-800"><span className="font-semibold">{randomizedResults[i].username}</span> { i < 2 ? 'liked your photo' : 'sent you a message'}</p><p className="text-gray-500 text-xs">{[1,2,5][i]} minutes ago</p></div>{ i < 2 ? <Heart className="text-pink-500" size={20} /> : <MessageCircle className="text-blue-500" size={20} />}</div>))}</>)}
-        <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm"><img src={profileImageUrl || ""} alt="Target Avatar" className="w-10 h-10 rounded-full object-cover" /><div className="flex-1 text-sm"><p className="text-gray-800"><span className="font-semibold">{instagramHandle}</span> is typing...</p><p className="text-gray-500 text-xs">Just now</p></div><span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse ml-auto"></span></div>
-        <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm"><img src={profileImageUrl || ""} alt="Target Avatar" className="w-10 h-10 rounded-full object-cover" /><div className="flex-1 text-sm"><p className="text-gray-800"><span className="font-semibold">{instagramHandle}</span> sent a new message.</p><p className="text-gray-500 text-xs">1 minute ago</p></div><MessageCircle className="text-blue-500 ml-auto" size={20} /></div>
+        {randomizedResults.length >= 3 && (
+          <>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <img
+                  src={randomizedResults[i].image || "/placeholder.svg"}
+                  alt="User Avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex-1 text-sm">
+                  <p className="text-gray-800">
+                    <span className="font-semibold">{randomizedResults[i].username}</span>{" "}
+                    {i < 2 ? "liked your photo" : "sent you a message"}
+                  </p>
+                  <p className="text-gray-500 text-xs">{[1, 2, 5][i]} minutes ago</p>
+                </div>
+                {i < 2 ? (
+                  <Heart className="text-pink-500" size={20} />
+                ) : (
+                  <MessageCircle className="text-blue-500" size={20} />
+                )}
+              </div>
+            ))}
+          </>
+        )}
+        <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <img src={profileImageUrl || ""} alt="Target Avatar" className="w-10 h-10 rounded-full object-cover" />
+          <div className="flex-1 text-sm">
+            <p className="text-gray-800">
+              <span className="font-semibold">{instagramHandle}</span> is typing...
+            </p>
+            <p className="text-gray-500 text-xs">Just now</p>
+          </div>
+          <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse ml-auto"></span>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <img src={profileImageUrl || ""} alt="Target Avatar" className="w-10 h-10 rounded-full object-cover" />
+          <div className="flex-1 text-sm">
+            <p className="text-gray-800">
+              <span className="font-semibold">{instagramHandle}</span> sent a new message.
+            </p>
+            <p className="text-gray-500 text-xs">1 minute ago</p>
+          </div>
+          <MessageCircle className="text-blue-500 ml-auto" size={20} />
+        </div>
       </div>
       <div className="space-y-5 text-left">
-        <h2 className="text-xl font-bold text-black text-center"><span className="text-red-600">INTERCEPTED:</span> Suspicious Likes from {instagramHandle}</h2>
-        {interceptedImages.map((item, index) => (<div key={index} className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm"><div className="relative w-full h-56 rounded-md overflow-hidden"><img src={item.image || "/placeholder.svg"} alt={`Liked content ${index + 1}`} className="w-full h-full object-cover filter blur-sm" /><div className="absolute inset-0 flex items-center justify-center bg-black/40"><Lock size={40} className="text-white" /></div></div><div className="flex items-center gap-2 mt-2"><Heart size={16} className="text-pink-500" /><span className="text-sm text-gray-600">{index % 2 === 0 ? '1.2K' : '876'} likes</span></div><div className="flex items-center gap-3 mt-2"><img src={profileImageUrl || ""} alt="User" className="w-8 h-8 rounded-full object-cover" /><p className="text-sm text-gray-800"><b>{instagramHandle}</b> {item.comment}</p></div></div>))}
+        <h2 className="text-xl font-bold text-black text-center">
+          <span className="text-red-600">INTERCEPTED:</span> Suspicious Likes from {instagramHandle}
+        </h2>
+        {interceptedImages.map((item, index) => (
+          <div key={index} className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="relative w-full h-56 rounded-md overflow-hidden">
+              <img
+                src={item.image || "/placeholder.svg"}
+                alt={`Liked content ${index + 1}`}
+                className="w-full h-full object-cover filter blur-sm"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Lock size={40} className="text-white" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Heart size={16} className="text-pink-500" />
+              <span className="text-sm text-gray-600">{index % 2 === 0 ? "1.2K" : "876"} likes</span>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <img src={profileImageUrl || ""} alt="User" className="w-8 h-8 rounded-full object-cover" />
+              <p className="text-sm text-gray-800">
+                <b>{instagramHandle}</b> {item.comment}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="bg-white p-5 rounded-lg shadow-xl text-center mt-8">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-cyan-500 flex items-center justify-center mb-4">
@@ -439,16 +532,18 @@ export default function Step2() {
             <AlertTriangle className="text-red-600" />
             <h3 className="font-bold">THE REPORT WILL BE DELETED IN:</h3>
           </div>
-          <p className="text-4xl font-mono font-bold my-1 text-red-600">
-            {formatTime(timeLeft)}
-          </p>
+          <p className="text-4xl font-mono font-bold my-1 text-red-600">{formatTime(timeLeft)}</p>
           <p className="text-xs text-red-700">
-            After the time expires, this report will be permanently deleted for privacy reasons. This offer cannot be recovered at a later date.
+            After the time expires, this report will be permanently deleted for privacy reasons. This offer cannot be
+            recovered at a later date.
           </p>
         </div>
-        
+
         {/* --- MAIN BUTTON AND PRICE --- */}
-        <a href="https://pay.hotmart.com/P102903672F?checkoutMode=10" className="mt-6 block w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 rounded-lg transition-colors shadow-lg hover:shadow-xl">
+        <a
+          href="https://pay.hotmart.com/P102903672F?checkoutMode=10"
+          className="mt-6 block w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+        >
           🔓 YES, I WANT THE COMPLETE REPORT
         </a>
         <div className="mt-4 text-center">
@@ -456,9 +551,7 @@ export default function Step2() {
             From <span className="line-through">$79</span> for only
           </p>
           <p className="text-4xl font-bold text-green-600">$37</p>
-          <p className="text-xs text-gray-400 mt-1">
-            (One-Time Payment)
-          </p>
+          <p className="text-xs text-gray-400 mt-1">(One-Time Payment)</p>
         </div>
 
         {/* --- TRUST & GUARANTEE AREA (All Translated) --- */}
@@ -468,9 +561,7 @@ export default function Step2() {
             <span>★★★★★</span>
             <span className="text-gray-600 font-medium text-sm">4.9/5.0</span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Based on 15,783 satisfied customers.
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Based on 15,783 satisfied customers.</p>
 
           {/* 2. Guarantee */}
           <div className="mt-6 flex items-center justify-center gap-3 bg-gray-50 p-3 rounded-lg">
@@ -482,16 +573,20 @@ export default function Step2() {
               </p>
             </div>
           </div>
-          
+
           {/* 3. Security Seals */}
           <div className="mt-4">
-              <p className="text-xs text-gray-400 mb-2">100% Secure Checkout</p>
-              <img src="/images/secure-payment-badge2.png" alt="Secure Payment Badges" className="mx-auto h-6 opacity-80" />
+            <p className="text-xs text-gray-400 mb-2">100% Secure Checkout</p>
+            <img
+              src="/images/secure-payment-badge2.png"
+              alt="Secure Payment Badges"
+              className="mx-auto h-6 opacity-80"
+            />
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-[rgba(156,79,165,1)]">
