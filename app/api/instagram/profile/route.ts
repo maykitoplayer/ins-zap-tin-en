@@ -13,51 +13,48 @@ export async function POST(request: NextRequest) {
 
     const cleanUsername = username.replace("@", "").trim()
 
-    // 1. Verificar Cache (Economiza créditos)
+    // 1. Verifica Cache
     const cached = cache.get(cleanUsername)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log("[v0] Returning cached Instagram profile")
       return NextResponse.json({ success: true, profile: cached.profile }, { status: 200 })
     }
 
-    console.log(`[v0] Iniciando busca para: ${cleanUsername}`)
-    
-    // =================================================================================
-    // PASSO 1: Converter Username em ID (Usando a API de Busca / Social API)
-    // =================================================================================
-    let userId = null;
-    let searchFallbackData = null; // Caso a API principal falhe, usamos dados da busca
+    console.log(`[v0] Iniciando busca para: ${cleanUsername} (Usando apenas Media API)`)
 
+    let userId = null;
+
+    // =================================================================================
+    // PASSO 1: OBTER ID PELO USERNAME (getUserIdByUsername)
+    // =================================================================================
     try {
-        const searchUrl = `https://instagram-social-api.p.rapidapi.com/v1/search_users?search_query=${cleanUsername}`;
-        const searchResponse = await fetch(searchUrl, {
-            method: "GET",
+        const idUrl = "https://instagram-media-api.p.rapidapi.com/user/id";
+        const idResponse = await fetch(idUrl, {
+            method: "POST",
             headers: {
                 "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-                "X-RapidAPI-Host": "instagram-social-api.p.rapidapi.com",
+                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // Mesma API para tudo
+                "Content-Type": "application/json"
             },
+            body: JSON.stringify({
+                username: cleanUsername,
+                proxy: ""
+            }),
             signal: AbortSignal.timeout?.(10_000)
         });
 
-        if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
+        if (idResponse.ok) {
+            const idData = await idResponse.json();
+            // A resposta geralmente vem como { "response": "12345..." } ou { "user_id": 123... }
+            // Ajustamos para pegar o ID onde quer que ele venha
+            userId = idData.response || idData.user_id || idData.id || idData.data?.id;
             
-            // Lógica para achar o ID na lista
-            let items = searchData.items || searchData.users || (Array.isArray(searchData) ? searchData : []);
-            const getUser = (i: any) => i.user || i;
-            
-            // Procura match exato
-            const found = items.find((i: any) => getUser(i).username?.toLowerCase() === cleanUsername.toLowerCase());
-            const bestMatch = found ? getUser(found) : (items.length > 0 ? getUser(items[0]) : null);
-
-            if (bestMatch) {
-                userId = bestMatch.pk || bestMatch.id; // O ID numérico (Ex: 62015806293)
-                searchFallbackData = bestMatch; // Guarda dados básicos caso o passo 2 falhe
-                console.log(`[v0] ID encontrado: ${userId}`);
-            }
+            console.log(`[v0] Passo 1: ID encontrado -> ${userId}`);
+        } else {
+            console.error(`[v0] Erro ao pegar ID: ${idResponse.status}`);
         }
     } catch (e) {
-        console.warn("[v0] Erro ao buscar ID:", e);
+        console.error("[v0] Erro de conexão no Passo 1:", e);
     }
 
     if (!userId) {
@@ -65,43 +62,36 @@ export async function POST(request: NextRequest) {
     }
 
     // =================================================================================
-    // PASSO 2: Usar a SUA NOVA API com o ID (userInfoProfile)
+    // PASSO 2: OBTER DETALHES PELO ID (userInfoProfile)
     // =================================================================================
     let userRaw = null;
 
     try {
-        console.log(`[v0] Buscando detalhes completos na nova API para ID: ${userId}...`);
-
-        const newApiUrl = "https://instagram-media-api.p.rapidapi.com/user/info/";
-        const newApiResponse = await fetch(newApiUrl, {
-            method: "POST", // A sua nova API exige POST
+        const infoUrl = "https://instagram-media-api.p.rapidapi.com/user/info/";
+        const infoResponse = await fetch(infoUrl, {
+            method: "POST",
             headers: {
                 "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // HOST DA NOVA API
+                "X-RapidAPI-Host": "instagram-media-api.p.rapidapi.com", // Mesma API
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                userid: String(userId), // Envia o ID que descobrimos no passo 1
-                proxy: "" // Campo exigido pela sua nova API
+                userid: String(userId), // O ID que pegamos no passo 1
+                proxy: ""
             }),
             signal: AbortSignal.timeout?.(15_000)
         });
 
-        if (newApiResponse.ok) {
-            const data = await newApiResponse.json();
-            // Tenta extrair o usuário da resposta (ajuste conforme o retorno da API)
+        if (infoResponse.ok) {
+            const data = await infoResponse.json();
             userRaw = data.data || data.user || data;
+            console.log("[v0] Passo 2: Detalhes recebidos com sucesso.");
         } else {
-            console.warn(`[v0] Nova API falhou (Status ${newApiResponse.status}), usando dados de fallback.`);
+            console.error(`[v0] Erro ao pegar detalhes: ${infoResponse.status}`);
         }
 
     } catch (error) {
-        console.error("[v0] Erro na nova API:", error);
-    }
-
-    // Se a API nova falhou, usa os dados da busca (Search API) como fallback
-    if (!userRaw || (!userRaw.username && !userRaw.pk)) {
-        userRaw = searchFallbackData;
+        console.error("[v0] Erro de conexão no Passo 2:", error);
     }
 
     if (!userRaw) {
@@ -109,15 +99,13 @@ export async function POST(request: NextRequest) {
     }
 
     // =================================================================================
-    // PASSO 3: Montar e Retornar os Dados
+    // MONTAGEM DA RESPOSTA
     // =================================================================================
     
-    // Extração de Imagem
     const originalImageUrl = userRaw.hd_profile_pic_url_info?.url || 
                              userRaw.profile_pic_url_hd || 
                              userRaw.profile_pic_url || "";
 
-    // Aplica o Proxy
     let finalProfilePic = "";
     if (originalImageUrl && originalImageUrl.startsWith("http")) {
         finalProfilePic = `/api/instagram/image?url=${encodeURIComponent(originalImageUrl)}`;
@@ -128,7 +116,6 @@ export async function POST(request: NextRequest) {
         full_name: userRaw.full_name || userRaw.fullName || "",
         biography: userRaw.biography || userRaw.bio || "",
         profile_pic_url: finalProfilePic,
-        // A nova API deve retornar os contadores corretos
         follower_count: userRaw.follower_count || userRaw.edge_followed_by?.count || 0,
         following_count: userRaw.following_count || userRaw.edge_follow?.count || 0,
         media_count: userRaw.media_count || userRaw.edge_owner_to_timeline_media?.count || 0,
@@ -137,13 +124,13 @@ export async function POST(request: NextRequest) {
         category: userRaw.category || "",
     }
 
-    // Salva no cache
+    // Cache
     cache.set(cleanUsername, { profile: profileData, timestamp: Date.now() });
 
     return NextResponse.json({ success: true, profile: profileData }, { status: 200 });
 
   } catch (err) {
-    console.error("[v0] Server Error:", err)
+    console.error("[v0] Erro Geral:", err)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
