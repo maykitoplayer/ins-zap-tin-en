@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     })
 
     const userIdText = await userIdResponse.text()
-    console.log("[v0] User ID API response:", userIdText.substring(0, 300))
+    console.log("[v0] User ID API response status:", userIdResponse.status)
+    console.log("[v0] User ID API response full:", userIdText)
 
     let userIdData
     try {
@@ -73,7 +74,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userIdResponse.ok) {
-      console.error("[v0] User ID API error:", userIdData)
+      console.error("[v0] User ID API error - Status:", userIdResponse.status)
+      console.error("[v0] User ID API error - Full response:", userIdText)
       return NextResponse.json(
         {
           success: false,
@@ -86,8 +88,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userId = userIdData.id || userIdData.user_id || userIdData.userId
-    console.log("[v0] Retrieved user ID:", userId)
+    const userId =
+      userIdData.id || userIdData.user_id || userIdData.userId || userIdData.data?.id || userIdData.data?.user_id
+    console.log("[v0] Extracted user ID:", userId, "from response:", JSON.stringify(userIdData, null, 2))
 
     if (!userId) {
       return NextResponse.json(
