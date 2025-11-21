@@ -37,14 +37,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch Instagram profile data using RapidAPI
-    const url = `https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=${cleanUsername}`
+    const url = "https://instagram-media-api.p.rapidapi.com/user/id"
 
     const response = await fetch(url, {
-      method: "GET",
+      method: "POST",
       headers: {
-        "X-RapidAPI-Key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-        "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com",
+        "x-rapidapi-key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
+        "x-rapidapi-host": "instagram-media-api.p.rapidapi.com",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        username: cleanUsername,
+        proxy: "",
+      }),
       signal: AbortSignal.timeout?.(10_000),
     })
 
@@ -80,8 +85,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Instagram API raw response:", JSON.stringify(data, null, 2))
 
-    if (!data || !data.data) {
-      console.log("[v0] Invalid response from Instagram API")
+    if (!data || !data.pk) {
+      console.log("[v0] Invalid response from Instagram API - no pk field")
       return NextResponse.json(
         {
           success: false,
@@ -95,16 +100,17 @@ export async function POST(request: NextRequest) {
     }
 
     const profileData = {
-      username: data.data.username || cleanUsername,
-      full_name: data.data.full_name || data.data.fullName || "",
-      biography: data.data.biography || data.data.bio || "",
-      profile_pic_url: data.data.profile_pic_url || data.data.profile_pic_url_hd || data.data.profilePicUrl || "",
-      follower_count: data.data.follower_count || data.data.followerCount || data.data.edge_followed_by?.count || 0,
-      following_count: data.data.following_count || data.data.followingCount || data.data.edge_follow?.count || 0,
-      media_count: data.data.media_count || data.data.mediaCount || data.data.edge_owner_to_timeline_media?.count || 0,
-      is_private: data.data.is_private || data.data.isPrivate || false,
-      is_verified: data.data.is_verified || data.data.isVerified || false,
-      category: data.data.category || "",
+      username: data.username || cleanUsername,
+      full_name: data.full_name || "",
+      biography: data.biography || "",
+      profile_pic_url: data.profile_pic_url || data.profile_picture_url || "",
+      follower_count: data.follower_count || 0,
+      following_count: data.following_count || 0,
+      media_count: data.media_count || 0,
+      is_private: data.is_private || false,
+      is_verified: data.is_verified || false,
+      category: data.category || "",
+      pk: data.pk,
     }
 
     console.log("[v0] Extracted profile data:", JSON.stringify(profileData, null, 2))
