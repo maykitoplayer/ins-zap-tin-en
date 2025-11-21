@@ -140,6 +140,10 @@ export default function Step2() {
   >([])
   const [interceptedImages, setInterceptedImages] = useState<Array<{ image: string; comment: string }>>([])
 
+  // State for Instagram posts grid
+  const [instagramPosts, setInstagramPosts] = useState<any[]>([])
+  const [visiblePosts, setVisiblePosts] = useState<number>(0)
+
   // Função para embaralhar e pegar N itens de um array
   const shuffleAndPick = (arr: any[], num: number) => {
     return [...arr].sort(() => 0.5 - Math.random()).slice(0, num)
@@ -205,12 +209,12 @@ export default function Step2() {
     setError("")
     setProfileData(null)
     setProfileImageUrl(null)
-    
+
     if (sanitizedUser.length < 3) {
       setIsLoading(false)
       return
     }
-    
+
     setIsLoading(true)
     debounceTimer.current = setTimeout(async () => {
       // 1. Checa Cache
@@ -218,7 +222,7 @@ export default function Step2() {
       if (cachedProfile) {
         setProfileData(cachedProfile)
         // CORREÇÃO AQUI: Usar a URL direto, pois ela já vem com o proxy do backend
-        setProfileImageUrl(cachedProfile.profile_pic_url) 
+        setProfileImageUrl(cachedProfile.profile_pic_url)
         setIsLoading(false)
         return
       }
@@ -231,18 +235,17 @@ export default function Step2() {
           body: JSON.stringify({ username: sanitizedUser }),
         })
         const result = await response.json()
-        
+
         if (!response.ok || !result.success) {
           throw new Error(result.error || "Perfil não encontrado ou privado.")
         }
-        
+
         const profile = result.profile
         setProfileData(profile)
         setProfileLocalCache(sanitizedUser, profile)
-        
-        // CORREÇÃO AQUI: Não adicionar /api/instagram/image de novo
-        setProfileImageUrl(profile.profile_pic_url) 
 
+        // CORREÇÃO AQUI: Não adicionar /api/instagram/image de novo
+        setProfileImageUrl(profile.profile_pic_url)
       } catch (err: any) {
         setError(err.message)
         setProfileData(null)
@@ -253,8 +256,48 @@ export default function Step2() {
   }
 
   const handleContinueClick = () => {
+    console.log("[v0] Continue button clicked, fetching posts...")
+
+    const fetchPosts = async () => {
+      try {
+        const cleanUsername = sanitizeUsername(instagramHandle)
+        console.log("[v0] Fetching posts for username:", cleanUsername)
+
+        const response = await fetch("/api/instagram/posts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username: cleanUsername }),
+        })
+
+        console.log("[v0] Posts fetch response status:", response.status)
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[v0] Posts data received:", data)
+
+          if (data.success && data.posts && data.posts.length > 0) {
+            const postsToShow = data.posts.slice(0, 9)
+            console.log("[v0] Setting", postsToShow.length, "posts to display")
+            setInstagramPosts(postsToShow)
+          } else {
+            console.log("[v0] No posts found in response")
+          }
+        } else {
+          console.error("[v0] Failed to fetch posts, status:", response.status)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching Instagram posts:", error)
+      }
+    }
+
+    fetchPosts()
+
     setStep(2)
     setLoadingProgress(0)
+    setVisiblePosts(0)
+
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
         if (prev >= 90) {
@@ -264,12 +307,24 @@ export default function Step2() {
         return prev + Math.random() * 20
       })
     }, 400)
+
+    const postsInterval = setInterval(() => {
+      setVisiblePosts((prev) => {
+        if (prev >= 9) {
+          clearInterval(postsInterval)
+          return 9
+        }
+        console.log("[v0] Showing post number:", prev + 1)
+        return prev + 1
+      })
+    }, 2800) // Show one post every ~2.8 seconds (9 posts in 25 seconds)
+
     setTimeout(() => {
       setLoadingProgress(100)
       setTimeout(() => {
         setStep(3)
-      }, 500)
-    }, 4000)
+      }, 1000)
+    }, 25000) // Changed from 4000 to 25000 (25 seconds)
   }
 
   useEffect(
@@ -423,6 +478,49 @@ export default function Step2() {
           ></div>
         </div>
       </div>
+
+      {instagramPosts.length > 0 && visiblePosts > 0 && (
+        <div className="w-full space-y-3 animate-fade-in">
+          <p className="font-mono text-xs text-yellow-600 text-center">[STATUS] Searching for connected accounts...</p>
+          <div className="grid grid-cols-3 gap-2">
+            {instagramPosts.slice(0, visiblePosts).map((post, index) => {
+              const imageUrl = post.imageUrl || "/placeholder.svg?height=200&width=200"
+              console.log("[v0] Rendering post", index, "with image:", imageUrl)
+
+              return (
+                <div
+                  key={post.id || post.pk || index}
+                  className="aspect-square rounded-lg overflow-hidden bg-gray-200 animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                  }}
+                >
+                  <img
+                    src={imageUrl || "/placeholder.svg"}
+                    alt={`Post ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error("[v0] Failed to load image for post", index, "URL:", imageUrl)
+                      e.currentTarget.src = "/instagram-post-lifestyle.png"
+                    }}
+                  />
+                </div>
+              )
+            })}
+            {/* Placeholder boxes for posts not yet revealed */}
+            {Array.from({ length: 9 - visiblePosts }).map((_, index) => (
+              <div key={`placeholder-${index}`} className="aspect-square rounded-lg bg-gray-300 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Show a message if no posts were fetched */}
+      {instagramPosts.length === 0 && visiblePosts > 0 && (
+        <div className="w-full text-center">
+          <p className="font-mono text-xs text-gray-500">[INFO] Loading posts from Instagram...</p>
+        </div>
+      )}
+      {/* </CHANGE> */}
     </div>
   )
 
