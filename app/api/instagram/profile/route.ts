@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const url = "https://instagram-scraper-v21.p.rapidapi.com/api/user-information"
+    const url = "https://instagram-scraper-v21.p.rapidapi.com/api/get-user-info"
     const rapidapiKey = process.env.INSTAGRAM_RAPIDAPI_KEY || ""
 
     console.log("[v0] Calling Instagram API with username:", cleanUsername)
