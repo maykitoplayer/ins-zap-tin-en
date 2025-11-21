@@ -36,19 +36,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch Instagram profile data using RapidAPI
-    const url = "https://instagram-media-api.p.rapidapi.com/user/id"
+    const url = "https://instagram-scraper-v21.p.rapidapi.com/api/user-information"
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "x-rapidapi-key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
-        "x-rapidapi-host": "instagram-media-api.p.rapidapi.com",
+        "x-rapidapi-host": "instagram-scraper-v21.p.rapidapi.com",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         username: cleanUsername,
-        proxy: "",
       }),
       signal: AbortSignal.timeout?.(10_000),
     })
@@ -85,8 +83,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Instagram API raw response:", JSON.stringify(data, null, 2))
 
-    if (!data || !data.pk) {
-      console.log("[v0] Invalid response from Instagram API - no pk field")
+    if (!data || !data.user) {
+      console.log("[v0] Invalid response from Instagram API - no user field")
       return NextResponse.json(
         {
           success: false,
@@ -99,18 +97,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const user = data.user
     const profileData = {
-      username: data.username || cleanUsername,
-      full_name: data.full_name || "",
-      biography: data.biography || "",
-      profile_pic_url: data.profile_pic_url || data.profile_picture_url || "",
-      follower_count: data.follower_count || 0,
-      following_count: data.following_count || 0,
-      media_count: data.media_count || 0,
-      is_private: data.is_private || false,
-      is_verified: data.is_verified || false,
-      category: data.category || "",
-      pk: data.pk,
+      username: user.username || cleanUsername,
+      full_name: user.full_name || "",
+      biography: user.biography || "",
+      profile_pic_url: user.profile_pic_url || user.profile_picture_url || "",
+      follower_count: user.follower_count || 0,
+      following_count: user.following_count || 0,
+      media_count: user.media_count || 0,
+      is_private: user.is_private || false,
+      is_verified: user.is_verified || false,
+      pk: user.pk || user.id || "",
     }
 
     console.log("[v0] Extracted profile data:", JSON.stringify(profileData, null, 2))
