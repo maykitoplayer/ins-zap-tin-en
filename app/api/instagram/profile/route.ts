@@ -36,41 +36,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const url = "https://instagram-scraper-v21.p.rapidapi.com/api/user-information"
     const rapidapiKey = process.env.INSTAGRAM_RAPIDAPI_KEY || ""
 
-    console.log("[v0] Calling Instagram API with username:", cleanUsername)
-    console.log("[v0] API URL:", url)
-    console.log("[v0] API Key available:", !!rapidapiKey)
-
-    const response = await fetch(url, {
+    console.log("[v0] Step 1: Getting user ID for username:", cleanUsername)
+    const userIdResponse = await fetch("https://instagram-media-api.p.rapidapi.com/user/id", {
       method: "POST",
       headers: {
         "x-rapidapi-key": rapidapiKey,
-        "x-rapidapi-host": "instagram-scraper-v21.p.rapidapi.com",
+        "x-rapidapi-host": "instagram-media-api.p.rapidapi.com",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         username: cleanUsername,
+        proxy: "",
       }),
     })
 
-    console.log("[v0] Instagram API response status:", response.status)
-    console.log("[v0] Response headers:", Object.fromEntries(response.headers))
+    const userIdText = await userIdResponse.text()
+    console.log("[v0] User ID API response:", userIdText.substring(0, 300))
 
-    // Get response text first to see what we're dealing with
-    const responseText = await response.text()
-    console.log("[v0] Instagram API raw response text:", responseText.substring(0, 500))
-
-    let data
+    let userIdData
     try {
-      data = JSON.parse(responseText)
+      userIdData = JSON.parse(userIdText)
     } catch (e) {
-      console.error("[v0] Failed to parse API response as JSON:", e)
+      console.error("[v0] Failed to parse user ID response:", e)
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid response from Instagram API",
+          error: "Failed to get user ID",
         },
         {
           status: 500,
@@ -79,77 +72,112 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (response.status === 429) {
-      console.log("[v0] Rate limit exceeded for Instagram API")
+    if (!userIdResponse.ok) {
+      console.error("[v0] User ID API error:", userIdData)
       return NextResponse.json(
         {
           success: false,
-          error: "Rate limit exceeded. Please try again later.",
+          error: userIdData?.message || "Failed to get user ID",
         },
         {
-          status: 429,
+          status: userIdResponse.status,
           headers: { "Access-Control-Allow-Origin": "*" },
         },
       )
     }
 
-    if (!response.ok) {
-      console.error("[v0] Instagram API error response:", data)
+    const userId = userIdData.id || userIdData.user_id || userIdData.userId
+    console.log("[v0] Retrieved user ID:", userId)
+
+    if (!userId) {
       return NextResponse.json(
         {
           success: false,
-          error: data?.message || "Failed to fetch Instagram profile",
+          error: "Could not extract user ID from response",
         },
         {
-          status: response.status,
+          status: 400,
           headers: { "Access-Control-Allow-Origin": "*" },
         },
       )
     }
 
-    console.log("[v0] Instagram API response data:", JSON.stringify(data, null, 2))
+    console.log("[v0] Step 2: Getting profile info for user ID:", userId)
+    const profileResponse = await fetch("https://instagram-media-api.p.rapidapi.com/user/info", {
+      method: "POST",
+      headers: {
+        "x-rapidapi-key": rapidapiKey,
+        "x-rapidapi-host": "instagram-media-api.p.rapidapi.com",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userid: userId,
+        proxy: "",
+      }),
+    })
 
-    // Check for success in different response formats
-    if (!data || (!data.user && !data.data)) {
-      console.log("[v0] Invalid response structure - expected user or data field")
+    const profileText = await profileResponse.text()
+    console.log("[v0] Profile API response:", profileText.substring(0, 500))
+
+    let profileData
+    try {
+      profileData = JSON.parse(profileText)
+    } catch (e) {
+      console.error("[v0] Failed to parse profile response:", e)
       return NextResponse.json(
         {
           success: false,
-          error: "Profile not found",
+          error: "Failed to parse profile data",
         },
         {
-          status: 404,
+          status: 500,
           headers: { "Access-Control-Allow-Origin": "*" },
         },
       )
     }
 
-    const user = data.user || data.data
-    const profileData = {
+    if (!profileResponse.ok) {
+      console.error("[v0] Profile API error:", profileData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: profileData?.message || "Failed to fetch profile",
+        },
+        {
+          status: profileResponse.status,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        },
+      )
+    }
+
+    const user = profileData.user || profileData.data || profileData
+    console.log("[v0] User data extracted:", JSON.stringify(user, null, 2))
+
+    const extractedProfile = {
       username: user.username || cleanUsername,
-      full_name: user.full_name || user.fullName || "",
-      biography: user.biography || user.bio || "",
-      profile_pic_url: user.profile_pic_url || user.profile_picture_url || user.profilePictureUrl || "",
-      follower_count: user.follower_count || user.followers || 0,
+      full_name: user.full_name || user.fullName || user.name || "",
+      biography: user.biography || user.bio || user.about || "",
+      profile_pic_url: user.profile_pic_url || user.profile_picture_url || user.profilePictureUrl || user.pic || "",
+      follower_count: user.follower_count || user.followers || user.follower || 0,
       following_count: user.following_count || user.following || 0,
-      media_count: user.media_count || user.posts || 0,
+      media_count: user.media_count || user.posts || user.post_count || 0,
       is_private: user.is_private || user.private || false,
       is_verified: user.is_verified || user.verified || false,
-      pk: user.pk || user.id || "",
+      pk: user.pk || user.id || userId,
     }
 
-    console.log("[v0] Extracted profile data:", JSON.stringify(profileData, null, 2))
+    console.log("[v0] Final extracted profile:", JSON.stringify(extractedProfile, null, 2))
 
     // Cache the result
     cache.set(cleanUsername, {
-      profile: profileData,
+      profile: extractedProfile,
       timestamp: Date.now(),
     })
 
     return NextResponse.json(
       {
         success: true,
-        profile: profileData,
+        profile: extractedProfile,
       },
       {
         status: 200,
