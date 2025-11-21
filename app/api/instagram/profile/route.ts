@@ -37,19 +37,47 @@ export async function POST(request: NextRequest) {
     }
 
     const url = "https://instagram-scraper-v21.p.rapidapi.com/api/user-information"
+    const rapidapiKey = process.env.INSTAGRAM_RAPIDAPI_KEY || ""
+
+    console.log("[v0] Calling Instagram API with username:", cleanUsername)
+    console.log("[v0] API URL:", url)
+    console.log("[v0] API Key available:", !!rapidapiKey)
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "x-rapidapi-key": process.env.INSTAGRAM_RAPIDAPI_KEY || "",
+        "x-rapidapi-key": rapidapiKey,
         "x-rapidapi-host": "instagram-scraper-v21.p.rapidapi.com",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         username: cleanUsername,
       }),
-      signal: AbortSignal.timeout?.(10_000),
     })
+
+    console.log("[v0] Instagram API response status:", response.status)
+    console.log("[v0] Response headers:", Object.fromEntries(response.headers))
+
+    // Get response text first to see what we're dealing with
+    const responseText = await response.text()
+    console.log("[v0] Instagram API raw response text:", responseText.substring(0, 500))
+
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error("[v0] Failed to parse API response as JSON:", e)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid response from Instagram API",
+        },
+        {
+          status: 500,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        },
+      )
+    }
 
     if (response.status === 429) {
       console.log("[v0] Rate limit exceeded for Instagram API")
@@ -66,11 +94,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error("[v0] Instagram API returned status:", response.status)
+      console.error("[v0] Instagram API error response:", data)
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to fetch Instagram profile",
+          error: data?.message || "Failed to fetch Instagram profile",
         },
         {
           status: response.status,
@@ -79,12 +107,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const data = await response.json()
+    console.log("[v0] Instagram API response data:", JSON.stringify(data, null, 2))
 
-    console.log("[v0] Instagram API raw response:", JSON.stringify(data, null, 2))
-
-    if (!data || !data.user) {
-      console.log("[v0] Invalid response from Instagram API - no user field")
+    // Check for success in different response formats
+    if (!data || (!data.user && !data.data)) {
+      console.log("[v0] Invalid response structure - expected user or data field")
       return NextResponse.json(
         {
           success: false,
@@ -97,17 +124,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = data.user
+    const user = data.user || data.data
     const profileData = {
       username: user.username || cleanUsername,
-      full_name: user.full_name || "",
-      biography: user.biography || "",
-      profile_pic_url: user.profile_pic_url || user.profile_picture_url || "",
-      follower_count: user.follower_count || 0,
-      following_count: user.following_count || 0,
-      media_count: user.media_count || 0,
-      is_private: user.is_private || false,
-      is_verified: user.is_verified || false,
+      full_name: user.full_name || user.fullName || "",
+      biography: user.biography || user.bio || "",
+      profile_pic_url: user.profile_pic_url || user.profile_picture_url || user.profilePictureUrl || "",
+      follower_count: user.follower_count || user.followers || 0,
+      following_count: user.following_count || user.following || 0,
+      media_count: user.media_count || user.posts || 0,
+      is_private: user.is_private || user.private || false,
+      is_verified: user.is_verified || user.verified || false,
       pk: user.pk || user.id || "",
     }
 
@@ -118,12 +145,6 @@ export async function POST(request: NextRequest) {
       profile: profileData,
       timestamp: Date.now(),
     })
-
-    // Clean up old cache entries
-    if (cache.size > 100) {
-      const oldestKey = Array.from(cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0]
-      cache.delete(oldestKey)
-    }
 
     return NextResponse.json(
       {
@@ -140,7 +161,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Internal server error",
+        error: err instanceof Error ? err.message : "Internal server error",
       },
       {
         status: 500,
